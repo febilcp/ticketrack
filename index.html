@@ -444,7 +444,7 @@
             color: #92400e;
         }
 
-        .status-completed, .status-done, .status-yes {
+        .status-completed {
             background: #d1fae5;
             color: #065f46;
         }
@@ -452,11 +452,6 @@
         .status-progress {
             background: #dbeafe;
             color: #1e40af;
-        }
-
-        .status-open, .status-no {
-            background: #fee2e2;
-            color: #991b1b;
         }
 
         /* Loading */
@@ -632,8 +627,6 @@
             font-weight: 600;
             color: var(--secondary);
             font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .detail-value {
@@ -645,47 +638,31 @@
         /* Responsive */
         @media (max-width: 768px) {
             body { padding: 10px; }
-            
             .header h1 { font-size: 1.5rem; }
-            
             .dashboard { grid-template-columns: repeat(2, 1fr); gap: 15px; }
-            
             .card { padding: 20px; }
             .card .value { font-size: 1.5rem; }
-            
             .charts-section { grid-template-columns: 1fr; }
-            
             .search-tabs { justify-content: center; }
-            
             .action-buttons { justify-content: center; }
-            
             .btn { padding: 10px 18px; font-size: 0.85rem; }
         }
 
         @media (max-width: 480px) {
             .dashboard { grid-template-columns: repeat(2, 1fr); }
-            
             .card { padding: 15px; }
             .card .value { font-size: 1.3rem; }
             .card h3 { font-size: 0.7rem; }
-            
-            .search-tab { padding: 10px 15px; font-size: 0.8rem; }
         }
 
         /* Print Styles */
         @media print {
             body { background: white; padding: 0; }
-            
             .header, .search-section, .action-buttons, .charts-section { display: none; }
-            
             .results-section { box-shadow: none; padding: 0; }
-            
             .dashboard { display: none; }
-            
             .table-wrapper { max-height: none; overflow: visible; }
-            
             table { min-width: auto; }
-            
             th { background: #333 !important; -webkit-print-color-adjust: exact; }
         }
     </style>
@@ -955,7 +932,7 @@
         let headers = [];
 
         // =====================================================
-        // INITIALIZATION
+        // INITIALIZATION - AUTO LOAD ON PAGE OPEN
         // =====================================================
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
@@ -984,7 +961,7 @@
                 showToast('Data loaded successfully!', 'success');
             } catch (error) {
                 console.error('Error loading data:', error);
-                showToast('Error loading data. Check console for details.', 'error');
+                showToast('Error loading data. Please publish your sheet first.', 'error');
             }
             showLoading(false);
         }
@@ -1001,7 +978,6 @@
                     headers.forEach((header, index) => {
                         row[header] = (values[index] || '').trim();
                     });
-                    // Only add rows that have at least one non-empty value
                     if (Object.values(row).some(v => v !== '')) {
                         allData.push(row);
                     }
@@ -1020,7 +996,6 @@
             
             for (let i = 0; i < line.length; i++) {
                 const char = line[i];
-                
                 if (char === '"') {
                     inQuotes = !inQuotes;
                 } else if (char === ',' && !inQuotes) {
@@ -1031,7 +1006,6 @@
                 }
             }
             result.push(current.trim());
-            
             return result;
         }
 
@@ -1043,14 +1017,8 @@
         // FIND COLUMN HELPER
         // =====================================================
         function findColumn(searchName) {
-            // Try exact match first
             if (headers.includes(searchName)) return searchName;
-            
-            // Try case-insensitive match
-            const found = headers.find(h => 
-                h.toLowerCase() === searchName.toLowerCase()
-            );
-            
+            const found = headers.find(h => h.toLowerCase() === searchName.toLowerCase());
             return found || searchName;
         }
 
@@ -1060,17 +1028,14 @@
         function updateDashboard() {
             document.getElementById('totalTickets').textContent = allData.length;
             
-            // Get unique villas
             const villaCol = findColumn(COLUMNS.VILLA);
             const villas = [...new Set(allData.map(row => row[villaCol]).filter(v => v))];
             document.getElementById('totalVillas').textContent = villas.length;
             
-            // Get unique systems
             const systemCol = findColumn(COLUMNS.SYSTEM);
             const systems = [...new Set(allData.map(row => row[systemCol]).filter(v => v))];
             document.getElementById('totalSystems').textContent = systems.length;
             
-            // Count completed vs pending
             const completedCol = findColumn(COLUMNS.COMPLETED);
             let completed = 0, pending = 0;
             
@@ -1086,9 +1051,9 @@
             document.getElementById('completedTickets').textContent = completed;
             document.getElementById('pendingTickets').textContent = pending;
             
-            // Today's tickets
             const dateCol = findColumn(COLUMNS.DATE);
-            const today = new Date().toLocaleDateString();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             let todayCount = 0;
             
             allData.forEach(row => {
@@ -1096,7 +1061,8 @@
                 if (rowDate) {
                     try {
                         const d = new Date(rowDate);
-                        if (d.toLocaleDateString() === today) {
+                        d.setHours(0, 0, 0, 0);
+                        if (d.getTime() === today.getTime()) {
                             todayCount++;
                         }
                     } catch (e) {}
@@ -1110,7 +1076,6 @@
         // DROPDOWNS
         // =====================================================
         function populateDropdowns() {
-            // Villa dropdown
             const villaCol = findColumn(COLUMNS.VILLA);
             const villas = [...new Set(allData.map(row => row[villaCol]).filter(v => v))].sort();
             const villaSelect = document.getElementById('villaSelect');
@@ -1119,7 +1084,6 @@
                 villaSelect.innerHTML += `<option value="${villa}">${villa}</option>`;
             });
             
-            // System dropdown
             const systemCol = findColumn(COLUMNS.SYSTEM);
             const systems = [...new Set(allData.map(row => row[systemCol]).filter(v => v))].sort();
             const systemSelect = document.getElementById('systemSelect');
@@ -1128,7 +1092,6 @@
                 systemSelect.innerHTML += `<option value="${system}">${system}</option>`;
             });
             
-            // Action Taker dropdown
             const actionCol = findColumn(COLUMNS.ACTION_BY);
             const actionTakers = [...new Set(allData.map(row => row[actionCol]).filter(v => v))].sort();
             const actionSelect = document.getElementById('actionSelect');
@@ -1149,39 +1112,23 @@
         }
 
         function filterByVilla(villa) {
-            if (!villa) {
-                showAllTickets();
-                return;
-            }
-            
+            if (!villa) { showAllTickets(); return; }
             const col = findColumn(COLUMNS.VILLA);
-            filteredData = allData.filter(row => 
-                (row[col] || '').toLowerCase() === villa.toLowerCase()
-            );
+            filteredData = allData.filter(row => (row[col] || '').toLowerCase() === villa.toLowerCase());
             renderTable();
             updateResultsHeader(`Villa/Flat: ${villa}`, filteredData.length);
         }
 
         function filterBySystem(system) {
-            if (!system) {
-                showAllTickets();
-                return;
-            }
-            
+            if (!system) { showAllTickets(); return; }
             const col = findColumn(COLUMNS.SYSTEM);
-            filteredData = allData.filter(row => 
-                (row[col] || '').toLowerCase() === system.toLowerCase()
-            );
+            filteredData = allData.filter(row => (row[col] || '').toLowerCase() === system.toLowerCase());
             renderTable();
             updateResultsHeader(`System: ${system}`, filteredData.length);
         }
 
         function filterByStatus(status) {
-            if (!status) {
-                showAllTickets();
-                return;
-            }
-            
+            if (!status) { showAllTickets(); return; }
             const col = findColumn(COLUMNS.COMPLETED);
             filteredData = allData.filter(row => {
                 const value = (row[col] || '').toLowerCase().trim();
@@ -1196,67 +1143,43 @@
         }
 
         function filterByActionTaker(person) {
-            if (!person) {
-                showAllTickets();
-                return;
-            }
-            
+            if (!person) { showAllTickets(); return; }
             const col = findColumn(COLUMNS.ACTION_BY);
-            filteredData = allData.filter(row => 
-                (row[col] || '').toLowerCase() === person.toLowerCase()
-            );
+            filteredData = allData.filter(row => (row[col] || '').toLowerCase() === person.toLowerCase());
             renderTable();
             updateResultsHeader(`Action By: ${person}`, filteredData.length);
         }
 
         function searchByMrf() {
             const searchTerm = document.getElementById('mrfInput').value.trim();
-            if (!searchTerm) {
-                showAllTickets();
-                return;
-            }
-            
+            if (!searchTerm) { showAllTickets(); return; }
             const col = findColumn(COLUMNS.MRF_NO);
-            filteredData = allData.filter(row => 
-                (row[col] || '').toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            filteredData = allData.filter(row => (row[col] || '').toLowerCase().includes(searchTerm.toLowerCase()));
             renderTable();
             updateResultsHeader(`MRF No: ${searchTerm}`, filteredData.length);
         }
 
         function handleMrfSearch(event) {
-            if (event.key === 'Enter') {
-                searchByMrf();
-            }
+            if (event.key === 'Enter') searchByMrf();
         }
 
         function filterByDate() {
             const fromDate = document.getElementById('dateFrom').value;
             const toDate = document.getElementById('dateTo').value;
-            
-            if (!fromDate && !toDate) {
-                showAllTickets();
-                return;
-            }
+            if (!fromDate && !toDate) { showAllTickets(); return; }
             
             const col = findColumn(COLUMNS.DATE);
             filteredData = allData.filter(row => {
                 const dateStr = row[col];
                 if (!dateStr) return false;
-                
                 try {
                     const rowDate = new Date(dateStr);
                     if (isNaN(rowDate.getTime())) return false;
-                    
                     if (fromDate && new Date(fromDate) > rowDate) return false;
                     if (toDate && new Date(toDate) < rowDate) return false;
-                    
                     return true;
-                } catch (e) {
-                    return false;
-                }
+                } catch (e) { return false; }
             });
-            
             renderTable();
             updateResultsHeader(`Date: ${fromDate || 'Start'} to ${toDate || 'End'}`, filteredData.length);
         }
@@ -1289,16 +1212,12 @@
             filteredData = allData.filter(row => {
                 const dateStr = row[col];
                 if (!dateStr) return false;
-                
                 try {
                     const rowDate = new Date(dateStr);
                     rowDate.setHours(0, 0, 0, 0);
                     return rowDate.getTime() === today.getTime();
-                } catch (e) {
-                    return false;
-                }
+                } catch (e) { return false; }
             });
-            
             renderTable();
             updateResultsHeader("Today's Tickets", filteredData.length);
         }
@@ -1331,49 +1250,40 @@
             noData.style.display = 'none';
             tableWrapper.style.display = 'block';
             
-            // Column display names
             const displayHeaders = {
-                [COLUMNS.DATE]: 'Date',
-                [COLUMNS.TIME]: 'Time',
-                [COLUMNS.MRF_NO]: 'MRF No',
-                [COLUMNS.VILLA]: 'Villa/Flat',
-                [COLUMNS.SYSTEM]: 'System',
-                [COLUMNS.RECEPTIONIST]: 'Receptionist',
-                [COLUMNS.COMPLAINT_DETAILS]: 'Complaint Details',
-                [COLUMNS.INTIMATED_BY]: 'Intimated By',
-                [COLUMNS.ACTION_BY]: 'Action By',
-                [COLUMNS.ACTION_DATE]: 'Action Date',
-                [COLUMNS.COMPLETED]: 'Status'
+                'date': 'Date',
+                'time': 'Time',
+                'mrf no': 'MRF No',
+                'flat/villa': 'Villa/Flat',
+                'system': 'System',
+                'RECEPTIONIST NAME': 'Receptionist',
+                'COMPLAINT DETAILS': 'Complaint',
+                'INTIMATED BY': 'Intimated By',
+                'ACTION TO BE TAKEN BY': 'Action By',
+                'ACTION TAKEN DATE': 'Action Date',
+                'COMPLETED.': 'Status'
             };
             
-            // Render headers
             tableHead.innerHTML = '<tr>' + 
                 headers.map(h => `<th>${displayHeaders[h] || h}</th>`).join('') + 
                 '<th>View</th></tr>';
             
-            // Render body
             tableBody.innerHTML = filteredData.map((row, index) => {
                 return '<tr>' + 
                     headers.map(h => {
                         let value = row[h] || '-';
                         
-                        // Format status/completed column
-                        if (h.toLowerCase() === COLUMNS.COMPLETED.toLowerCase() || h.toLowerCase().includes('completed')) {
+                        if (h.toLowerCase().includes('completed')) {
                             value = formatStatus(value);
                         }
                         
-                        // Truncate long text
-                        if (typeof value === 'string' && value.length > 50 && !value.includes('status-badge')) {
-                            value = `<span title="${value}">${value.substring(0, 50)}...</span>`;
+                        if (typeof value === 'string' && value.length > 40 && !value.includes('status-badge')) {
+                            value = `<span title="${value}">${value.substring(0, 40)}...</span>`;
                         }
                         
                         return `<td>${value}</td>`;
                     }).join('') +
-                    `<td>
-                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showDetail(${index})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>` +
+                    `<td><button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showDetail(${index})"><i class="fas fa-eye"></i></button></td>` +
                     '</tr>';
             }).join('');
         }
@@ -1382,18 +1292,11 @@
             if (!status || status === '-') {
                 return '<span class="status-badge status-pending">Pending</span>';
             }
-            
             const s = status.toLowerCase().trim();
-            
             if (s === 'yes' || s === 'done' || s === 'completed') {
                 return '<span class="status-badge status-completed">Completed</span>';
-            } else if (s === 'no' || s === 'pending') {
-                return '<span class="status-badge status-pending">Pending</span>';
-            } else if (s.includes('progress')) {
-                return '<span class="status-badge status-progress">In Progress</span>';
-            } else {
-                return `<span class="status-badge status-pending">${status}</span>`;
             }
+            return '<span class="status-badge status-pending">Pending</span>';
         }
 
         function updateResultsHeader(title, count) {
@@ -1412,7 +1315,6 @@
         function renderSystemChart() {
             const col = findColumn(COLUMNS.SYSTEM);
             const counts = {};
-            
             allData.forEach(row => {
                 const system = row[col] || 'Unknown';
                 counts[system] = (counts[system] || 0) + 1;
@@ -1421,7 +1323,6 @@
             const container = document.getElementById('systemChart');
             const total = allData.length;
             const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
-            
             const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 7);
             
             container.innerHTML = sorted.map(([label, value], index) => {
@@ -1430,9 +1331,7 @@
                     <div class="chart-bar-item">
                         <span class="chart-bar-label" title="${label}">${label}</span>
                         <div class="chart-bar-container">
-                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${colors[index % colors.length]}">
-                                ${value}
-                            </div>
+                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${colors[index % colors.length]}">${value}</div>
                         </div>
                     </div>
                 `;
@@ -1442,19 +1341,14 @@
         function renderStatusChart() {
             const col = findColumn(COLUMNS.COMPLETED);
             let completed = 0, pending = 0;
-            
             allData.forEach(row => {
                 const status = (row[col] || '').toLowerCase().trim();
-                if (status === 'yes' || status === 'done' || status === 'completed') {
-                    completed++;
-                } else {
-                    pending++;
-                }
+                if (status === 'yes' || status === 'done' || status === 'completed') completed++;
+                else pending++;
             });
             
             const container = document.getElementById('statusChart');
             const total = allData.length;
-            
             const data = [
                 { label: 'Completed', value: completed, color: '#10b981' },
                 { label: 'Pending', value: pending, color: '#f59e0b' }
@@ -1466,9 +1360,7 @@
                     <div class="chart-bar-item">
                         <span class="chart-bar-label">${item.label}</span>
                         <div class="chart-bar-container">
-                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${item.color}">
-                                ${item.value} (${percentage.toFixed(1)}%)
-                            </div>
+                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${item.color}">${item.value} (${percentage.toFixed(1)}%)</div>
                         </div>
                     </div>
                 `;
@@ -1484,32 +1376,27 @@
             const modalBody = document.getElementById('modalBody');
             
             const displayNames = {
-                [COLUMNS.DATE]: '📅 Date',
-                [COLUMNS.TIME]: '🕐 Time',
-                [COLUMNS.MRF_NO]: '🔢 MRF No',
-                [COLUMNS.VILLA]: '🏠 Villa/Flat',
-                [COLUMNS.SYSTEM]: '⚙️ System',
-                [COLUMNS.RECEPTIONIST]: '👤 Receptionist',
-                [COLUMNS.COMPLAINT_DETAILS]: '📝 Complaint Details',
-                [COLUMNS.INTIMATED_BY]: '📞 Intimated By',
-                [COLUMNS.ACTION_BY]: '🔧 Action To Be Taken By',
-                [COLUMNS.ACTION_DATE]: '📆 Action Taken Date',
-                [COLUMNS.COMPLETED]: '✅ Status'
+                'date': '📅 Date',
+                'time': '🕐 Time',
+                'mrf no': '🔢 MRF No',
+                'flat/villa': '🏠 Villa/Flat',
+                'system': '⚙️ System',
+                'RECEPTIONIST NAME': '👤 Receptionist',
+                'COMPLAINT DETAILS': '📝 Complaint Details',
+                'INTIMATED BY': '📞 Intimated By',
+                'ACTION TO BE TAKEN BY': '🔧 Action By',
+                'ACTION TAKEN DATE': '📆 Action Date',
+                'COMPLETED.': '✅ Status'
             };
             
             modalBody.innerHTML = headers.map(header => {
                 let value = row[header] || '-';
-                
-                // Format status in modal
-                if (header.toLowerCase() === COLUMNS.COMPLETED.toLowerCase() || header.toLowerCase().includes('completed')) {
+                if (header.toLowerCase().includes('completed')) {
                     const s = (value || '').toLowerCase().trim();
-                    if (s === 'yes' || s === 'done' || s === 'completed') {
-                        value = '<span class="status-badge status-completed">Completed</span>';
-                    } else {
-                        value = '<span class="status-badge status-pending">Pending</span>';
-                    }
+                    value = (s === 'yes' || s === 'done' || s === 'completed') 
+                        ? '<span class="status-badge status-completed">Completed</span>'
+                        : '<span class="status-badge status-pending">Pending</span>';
                 }
-                
                 return `
                     <div class="detail-row">
                         <div class="detail-label">${displayNames[header] || header}</div>
@@ -1525,12 +1412,10 @@
             document.getElementById('detailModal').classList.remove('active');
         }
 
-        // Close modal on outside click
         document.getElementById('detailModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
 
-        // Close modal on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeModal();
         });
@@ -1541,7 +1426,6 @@
         function switchTab(tab) {
             document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
             document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
-            
             document.querySelectorAll('.search-panel').forEach(p => p.classList.remove('active'));
             document.getElementById(`panel-${tab}`).classList.add('active');
         }
@@ -1555,10 +1439,7 @@
                 return;
             }
             
-            // BOM for Excel to recognize UTF-8
-            let csv = '\uFEFF';
-            csv += headers.join(',') + '\n';
-            
+            let csv = '\uFEFF' + headers.join(',') + '\n';
             filteredData.forEach(row => {
                 csv += headers.map(h => {
                     let value = String(row[h] || '').replace(/"/g, '""');
@@ -1571,7 +1452,6 @@
             link.href = URL.createObjectURL(blob);
             link.download = `villa_maintenance_report_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
-            
             showToast('CSV exported successfully!', 'success');
         }
 
@@ -1584,16 +1464,10 @@
 
         function showToast(message, type = '') {
             const toast = document.getElementById('toast');
-            const icon = type === 'success' ? 'check-circle' : 
-                        type === 'error' ? 'exclamation-circle' : 
-                        type === 'warning' ? 'exclamation-triangle' : 'info-circle';
-            
+            const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'exclamation-triangle';
             toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
             toast.className = `toast show ${type}`;
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
 </body>
