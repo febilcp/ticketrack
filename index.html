@@ -8,43 +8,18 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/recharts@2.5.0/dist/Recharts.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.js"></script>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
-        const { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } = Recharts;
-
-        // SVG Icons as components
-        const SearchIcon = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-        );
-
-        const FilterIcon = () => (
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
-        );
-
-        const DownloadIcon = () => (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-        );
-
-        const RefreshIcon = ({ loading }) => (
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-        );
+        const { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
 
         const VillaMaintenanceDashboard = () => {
             const [tickets, setTickets] = useState([]);
-            const [loading, setLoading] = useState(false);
+            const [loading, setLoading] = useState(true);
             const [error, setError] = useState(null);
             const [filters, setFilters] = useState({
                 villa: '',
@@ -53,66 +28,96 @@
                 complaintNumber: ''
             });
 
-            // IMPORTANT: Replace with your Google Sheet ID
+            // YOUR GOOGLE SHEET ID AND TAB ID
             const SHEET_ID = '1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4';
+            const GID = '931447490'; // The specific tab/sheet
 
             const loadData = async () => {
                 setLoading(true);
                 setError(null);
+                console.log('Starting to load data...');
                 
                 try {
-                    const url = `https://docs.google.com/spreadsheets/d/$https://docs.google.com/spreadsheets/d/1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4/edit?gid=931447490#gid=931447490}/export?format=csv`;
+                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                    console.log('Fetching from:', url);
                     
                     const response = await fetch(url);
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
                     const csvText = await response.text();
+                    console.log('CSV received, length:', csvText.length);
+                    console.log('First 200 chars:', csvText.substring(0, 200));
                     
                     // Parse CSV
-                    const lines = csvText.split('\n');
-                    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-                    const rows = lines.slice(1).filter(line => line.trim());
+                    const lines = csvText.split('\n').filter(line => line.trim());
+                    console.log('Total lines:', lines.length);
                     
-                    const formattedTickets = rows.map((row, index) => {
+                    if (lines.length < 2) {
+                        throw new Error('Sheet appears to be empty or has only headers');
+                    }
+                    
+                    const formattedTickets = [];
+                    
+                    // Skip header row (index 0), start from index 1
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i];
                         const values = [];
                         let current = '';
                         let inQuotes = false;
                         
-                        for (let char of row) {
+                        for (let char of line) {
                             if (char === '"') {
                                 inQuotes = !inQuotes;
                             } else if (char === ',' && !inQuotes) {
-                                values.push(current.trim().replace(/"/g, ''));
+                                values.push(current.trim().replace(/^"|"$/g, ''));
                                 current = '';
                             } else {
                                 current += char;
                             }
                         }
-                        values.push(current.trim().replace(/"/g, ''));
+                        values.push(current.trim().replace(/^"|"$/g, ''));
                         
-                        return {
-                            id: index + 1,
-                            complaintNumber: values[0] || '',
-                            date: values[1] || '',
-                            villa: values[2] || '',
-                            category: values[3] || '',
-                            description: values[4] || '',
-                            status: values[5] || 'Pending',
-                            assignedTo: values[6] || '',
-                            completionDate: values[7] || ''
-                        };
-                    });
+                        // Only add if we have a complaint number
+                        if (values[0] && values[0].trim()) {
+                            formattedTickets.push({
+                                id: i,
+                                complaintNumber: values[0] || '',
+                                date: values[1] || '',
+                                villa: values[2] || '',
+                                category: values[3] || '',
+                                description: values[4] || '',
+                                status: values[5] || 'Pending',
+                                assignedTo: values[6] || '',
+                                completionDate: values[7] || ''
+                            });
+                        }
+                    }
                     
-                    setTickets(formattedTickets.filter(t => t.complaintNumber));
+                    console.log('Parsed tickets:', formattedTickets.length);
+                    
+                    if (formattedTickets.length === 0) {
+                        throw new Error('No valid tickets found in the sheet');
+                    }
+                    
+                    setTickets(formattedTickets);
+                    
                 } catch (err) {
-                    setError('Failed to load data. Make sure your Google Sheet is shared as "Anyone with the link can view"');
-                    console.error(err);
+                    console.error('Error loading data:', err);
+                    setError(err.message);
                     
-                    // Demo data
+                    // Load demo data
+                    console.log('Loading demo data...');
                     setTickets([
-                        { id: 1, complaintNumber: 'C001', date: '2024-01-15', villa: 'Villa A1', category: 'Plumbing', description: 'Leaking faucet', status: 'Completed', assignedTo: 'John', completionDate: '2024-01-16' },
-                        { id: 2, complaintNumber: 'C002', date: '2024-01-16', villa: 'Villa B2', category: 'Electrical', description: 'Light not working', status: 'Pending', assignedTo: 'Mike', completionDate: '' },
-                        { id: 3, complaintNumber: 'C003', date: '2024-01-17', villa: 'Villa A1', category: 'AC', description: 'AC not cooling', status: 'In Progress', assignedTo: 'Sarah', completionDate: '' },
-                        { id: 4, complaintNumber: 'C004', date: '2024-01-18', villa: 'Villa C3', category: 'Plumbing', description: 'Blocked drain', status: 'Pending', assignedTo: '', completionDate: '' },
-                        { id: 5, complaintNumber: 'C005', date: '2024-01-19', villa: 'Villa B2', category: 'Painting', description: 'Wall damage', status: 'Completed', assignedTo: 'Tom', completionDate: '2024-01-20' },
+                        { id: 1, complaintNumber: 'C001', date: '2024-01-15', villa: 'Villa A1', category: 'Plumbing', description: 'Leaking faucet in kitchen', status: 'Completed', assignedTo: 'John', completionDate: '2024-01-16' },
+                        { id: 2, complaintNumber: 'C002', date: '2024-01-16', villa: 'Villa B2', category: 'Electrical', description: 'Light not working in bedroom', status: 'Pending', assignedTo: 'Mike', completionDate: '' },
+                        { id: 3, complaintNumber: 'C003', date: '2024-01-17', villa: 'Villa A1', category: 'AC', description: 'AC not cooling properly', status: 'In Progress', assignedTo: 'Sarah', completionDate: '' },
+                        { id: 4, complaintNumber: 'C004', date: '2024-01-18', villa: 'Villa C3', category: 'Plumbing', description: 'Blocked drain in bathroom', status: 'Pending', assignedTo: '', completionDate: '' },
+                        { id: 5, complaintNumber: 'C005', date: '2024-01-19', villa: 'Villa B2', category: 'Painting', description: 'Wall damage repair needed', status: 'Completed', assignedTo: 'Tom', completionDate: '2024-01-20' },
+                        { id: 6, complaintNumber: 'C006', date: '2024-01-20', villa: 'Villa D4', category: 'Electrical', description: 'Socket not working', status: 'In Progress', assignedTo: 'Mike', completionDate: '' },
                     ]);
                 } finally {
                     setLoading(false);
@@ -132,7 +137,7 @@
                 );
             });
 
-            // Analytics data
+            // Analytics
             const categoryData = Object.entries(
                 filteredTickets.reduce((acc, ticket) => {
                     acc[ticket.category] = (acc[ticket.category] || 0) + 1;
@@ -174,53 +179,86 @@
                 a.click();
             };
 
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                            <p className="text-xl text-gray-600">Loading dashboard...</p>
+                            <p className="text-sm text-gray-500 mt-2">Check browser console (F12) for details</p>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
-                <div className="min-h-screen bg-gray-50 p-6">
+                <div className="min-h-screen bg-gray-50 p-4 md:p-6">
                     <div className="max-w-7xl mx-auto">
                         {/* Header */}
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h1 className="text-3xl font-bold text-gray-800">Villa Maintenance Dashboard</h1>
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Villa Maintenance Dashboard</h1>
                                 <button
                                     onClick={loadData}
-                                    disabled={loading}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                    <RefreshIcon loading={loading} />
-                                    Refresh
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    Refresh Data
                                 </button>
                             </div>
 
                             {error && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                    <p className="text-yellow-800 text-sm">{error}</p>
-                                    <p className="text-yellow-700 text-xs mt-2">
-                                        Make sure your Google Sheet is shared with "Anyone with the link can view" permissions.
-                                    </p>
+                                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-red-800">Error loading Google Sheet data</h3>
+                                            <p className="text-sm text-red-700 mt-1">{error}</p>
+                                            <div className="mt-2 text-sm text-red-700">
+                                                <p className="font-semibold">To fix this:</p>
+                                                <ol className="list-decimal ml-5 mt-1">
+                                                    <li>Open your Google Sheet</li>
+                                                    <li>Click "Share" button (top right)</li>
+                                                    <li>Change to "Anyone with the link" → "Viewer"</li>
+                                                    <li>Click "Copy link" and verify it works in incognito mode</li>
+                                                    <li>Refresh this page</li>
+                                                </ol>
+                                            </div>
+                                            <p className="text-sm text-red-600 mt-2 font-medium">
+                                                Showing demo data below for testing
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                 <div className="bg-blue-50 rounded-lg p-4">
                                     <p className="text-blue-600 text-sm font-medium">Total Tickets</p>
-                                    <p className="text-3xl font-bold text-blue-900">{filteredTickets.length}</p>
+                                    <p className="text-2xl md:text-3xl font-bold text-blue-900">{filteredTickets.length}</p>
                                 </div>
                                 <div className="bg-yellow-50 rounded-lg p-4">
                                     <p className="text-yellow-600 text-sm font-medium">Pending</p>
-                                    <p className="text-3xl font-bold text-yellow-900">
+                                    <p className="text-2xl md:text-3xl font-bold text-yellow-900">
                                         {filteredTickets.filter(t => t.status === 'Pending').length}
                                     </p>
                                 </div>
                                 <div className="bg-green-50 rounded-lg p-4">
                                     <p className="text-green-600 text-sm font-medium">Completed</p>
-                                    <p className="text-3xl font-bold text-green-900">
+                                    <p className="text-2xl md:text-3xl font-bold text-green-900">
                                         {filteredTickets.filter(t => t.status === 'Completed').length}
                                     </p>
                                 </div>
                                 <div className="bg-purple-50 rounded-lg p-4">
                                     <p className="text-purple-600 text-sm font-medium">In Progress</p>
-                                    <p className="text-3xl font-bold text-purple-900">
+                                    <p className="text-2xl md:text-3xl font-bold text-purple-900">
                                         {filteredTickets.filter(t => t.status === 'In Progress').length}
                                     </p>
                                 </div>
@@ -229,28 +267,25 @@
 
                         {/* Filters */}
                         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <div className="flex items-center gap-2 mb-4">
-                                <FilterIcon />
-                                <h2 className="text-xl font-semibold text-gray-800">Filters</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Filters</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <input
                                     type="text"
-                                    placeholder="Search by Complaint #"
+                                    placeholder="Complaint #"
                                     value={filters.complaintNumber}
                                     onChange={(e) => setFilters({...filters, complaintNumber: e.target.value})}
                                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Search by Villa"
+                                    placeholder="Villa"
                                     value={filters.villa}
                                     onChange={(e) => setFilters({...filters, villa: e.target.value})}
                                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Search by Category"
+                                    placeholder="Category"
                                     value={filters.category}
                                     onChange={(e) => setFilters({...filters, category: e.target.value})}
                                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -270,7 +305,9 @@
                                 onClick={exportToCSV}
                                 className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
                             >
-                                <DownloadIcon />
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
                                 Export to CSV
                             </button>
                         </div>
@@ -301,7 +338,6 @@
                                             labelLine={false}
                                             label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                             outerRadius={100}
-                                            fill="#8884d8"
                                             dataKey="value"
                                         >
                                             {statusData.map((entry, index) => (
@@ -327,36 +363,36 @@
                             </div>
                         </div>
 
-                        {/* Tickets Table */}
+                        {/* Table */}
                         <div className="bg-white rounded-lg shadow-sm p-6">
                             <h2 className="text-xl font-semibold text-gray-800 mb-4">Maintenance Tickets</h2>
                             <div className="overflow-x-auto">
-                                <table className="w-full">
+                                <table className="w-full min-w-max">
                                     <thead>
-                                        <tr className="border-b border-gray-200">
+                                        <tr className="border-b-2 border-gray-200">
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Complaint #</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Villa</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
                                             <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Assigned To</th>
+                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Assigned</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredTickets.map((ticket) => (
                                             <tr key={ticket.id} className="border-b border-gray-100 hover:bg-gray-50">
                                                 <td className="py-3 px-4 font-medium text-blue-600">{ticket.complaintNumber}</td>
-                                                <td className="py-3 px-4 text-gray-700">{ticket.date}</td>
+                                                <td className="py-3 px-4 text-gray-700 text-sm">{ticket.date}</td>
                                                 <td className="py-3 px-4 text-gray-700">{ticket.villa}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs md:text-sm">
                                                         {ticket.category}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-gray-700 max-w-xs truncate">{ticket.description}</td>
                                                 <td className="py-3 px-4">
-                                                    <span className={`px-2 py-1 rounded text-sm font-medium ${
+                                                    <span className={`px-2 py-1 rounded text-xs md:text-sm font-medium whitespace-nowrap ${
                                                         ticket.status === 'Completed' ? 'bg-green-100 text-green-800' :
                                                         ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' :
                                                         'bg-gray-100 text-gray-800'
@@ -370,12 +406,19 @@
                                     </tbody>
                                 </table>
                             </div>
+                            
+                            {filteredTickets.length === 0 && (
+                                <div className="text-center py-8 text-gray-500">
+                                    No tickets found matching the filters
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             );
         };
 
+        // Render the app
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<VillaMaintenanceDashboard />);
     </script>
