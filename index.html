@@ -48,8 +48,13 @@
 
         .header h1 {
             color: var(--dark);
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .header p {
@@ -57,62 +62,20 @@
             font-size: 1.1rem;
         }
 
-        /* Setup Section */
-        .setup-section {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        }
-
-        .setup-section h3 {
-            color: var(--dark);
-            margin-bottom: 15px;
-        }
-
-        .api-input-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .api-input-group input {
-            flex: 1;
-            min-width: 300px;
-            padding: 15px 20px;
-            border: 2px solid var(--border);
+        .last-updated {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: var(--light);
             border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .api-input-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .api-input-group button {
-            padding: 15px 30px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .api-input-group button:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
+            display: inline-block;
+            font-size: 0.9rem;
+            color: var(--secondary);
         }
 
         /* Dashboard Cards */
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -122,21 +85,41 @@
             border-radius: 15px;
             padding: 25px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+        }
+
+        .card.blue::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .card.green::before { background: linear-gradient(90deg, #10b981, #059669); }
+        .card.orange::before { background: linear-gradient(90deg, #f59e0b, #d97706); }
+        .card.red::before { background: linear-gradient(90deg, #ef4444, #dc2626); }
+        .card.purple::before { background: linear-gradient(90deg, #8b5cf6, #7c3aed); }
+        .card.cyan::before { background: linear-gradient(90deg, #06b6d4, #0891b2); }
 
         .card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
         }
 
         .card-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 15px;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: white;
             margin-bottom: 15px;
         }
@@ -145,19 +128,21 @@
         .card-icon.green { background: linear-gradient(135deg, #10b981, #059669); }
         .card-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
         .card-icon.red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .card-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .card-icon.cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
 
         .card h3 {
             color: var(--secondary);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-bottom: 5px;
         }
 
         .card .value {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: bold;
             color: var(--dark);
-            margin-top: 5px;
         }
 
         /* Search Section */
@@ -169,6 +154,15 @@
             box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
 
+        .search-section h2 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+        }
+
         .search-tabs {
             display: flex;
             gap: 10px;
@@ -177,14 +171,17 @@
         }
 
         .search-tab {
-            padding: 12px 25px;
+            padding: 12px 20px;
             background: var(--light);
-            border: none;
+            border: 2px solid transparent;
             border-radius: 10px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem;
             transition: all 0.3s;
             color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .search-tab:hover {
@@ -196,15 +193,21 @@
             color: white;
         }
 
-        .search-form {
+        .search-panel {
             display: none;
             gap: 15px;
             align-items: flex-end;
             flex-wrap: wrap;
+            animation: fadeIn 0.3s ease;
         }
 
-        .search-form.active {
+        .search-panel.active {
             display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .form-group {
@@ -216,7 +219,8 @@
             display: block;
             margin-bottom: 8px;
             color: var(--dark);
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
 
         .form-group input,
@@ -227,56 +231,113 @@
             border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s;
+            background: white;
         }
 
         .form-group input:focus,
         .form-group select:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         .btn {
-            padding: 12px 30px;
+            padding: 12px 25px;
             border: none;
             border-radius: 10px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s;
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            font-weight: 500;
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #059669; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-secondary:hover { background: #475569; }
 
-        .btn-primary:hover {
-            background: var(--primary-dark);
-        }
-
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        /* Quick Actions */
-        .quick-actions {
+        /* Action Buttons */
+        .action-buttons {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             margin-bottom: 30px;
             flex-wrap: wrap;
+        }
+
+        /* Charts Section */
+        .charts-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h3 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+
+        .chart-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chart-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-bar-label {
+            width: 100px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chart-bar-container {
+            flex: 1;
+            height: 28px;
+            background: var(--light);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .chart-bar {
+            height: 100%;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: width 0.8s ease;
+            min-width: 35px;
         }
 
         /* Results Section */
@@ -299,54 +360,83 @@
 
         .results-header h2 {
             color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3rem;
+        }
+
+        .results-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .results-count {
-            background: var(--primary);
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
 
-        /* Table */
-        .table-container {
+        /* Table Styles */
+        .table-wrapper {
             overflow-x: auto;
             border-radius: 15px;
             border: 1px solid var(--border);
+            max-height: 600px;
+            overflow-y: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
+            min-width: 1200px;
         }
 
         th, td {
-            padding: 15px;
+            padding: 14px 12px;
             text-align: left;
             border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
         }
 
         th {
-            background: var(--light);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
             font-weight: 600;
-            color: var(--dark);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             position: sticky;
             top: 0;
+            white-space: nowrap;
+            font-size: 0.8rem;
         }
 
         tr:hover {
-            background: var(--light);
+            background: #f0f9ff;
+        }
+
+        tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        tr:nth-child(even):hover {
+            background: #f0f9ff;
         }
 
         /* Status Badges */
         .status-badge {
-            padding: 5px 15px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            font-size: 0.75rem;
+            font-weight: 600;
             display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-pending {
@@ -354,7 +444,7 @@
             color: #92400e;
         }
 
-        .status-completed {
+        .status-completed, .status-done, .status-yes {
             background: #d1fae5;
             color: #065f46;
         }
@@ -364,89 +454,45 @@
             color: #1e40af;
         }
 
-        .status-open {
+        .status-open, .status-no {
             background: #fee2e2;
             color: #991b1b;
         }
 
-        /* Charts Section */
-        .charts-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .chart-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        }
-
-        .chart-card h3 {
-            color: var(--dark);
-            margin-bottom: 20px;
-        }
-
-        .chart-bars {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .chart-bar-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .chart-bar-label {
-            width: 120px;
-            font-size: 0.9rem;
-            color: var(--secondary);
-        }
-
-        .chart-bar-container {
-            flex: 1;
-            height: 30px;
-            background: var(--light);
-            border-radius: 15px;
-            overflow: hidden;
-        }
-
-        .chart-bar {
-            height: 100%;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
-            color: white;
-            font-weight: 500;
-            font-size: 0.85rem;
-            transition: width 0.5s ease;
-        }
-
         /* Loading */
-        .loading {
+        .loading-overlay {
             display: none;
-            text-align: center;
-            padding: 50px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
 
-        .loading.active {
-            display: block;
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-box {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
         .spinner {
             width: 50px;
             height: 50px;
-            border: 5px solid var(--border);
+            border: 4px solid var(--border);
             border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin: 0 auto 15px;
         }
 
         @keyframes spin {
@@ -456,49 +502,23 @@
         /* No Data */
         .no-data {
             text-align: center;
-            padding: 50px;
+            padding: 60px 20px;
             color: var(--secondary);
         }
 
         .no-data i {
             font-size: 4rem;
             margin-bottom: 20px;
-            opacity: 0.5;
+            opacity: 0.3;
+            color: var(--primary);
         }
 
-        /* Export Buttons */
-        .export-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
+        .no-data h3 {
+            margin-bottom: 10px;
+            color: var(--dark);
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8rem;
-            }
-            
-            .dashboard {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .charts-section {
-                grid-template-columns: 1fr;
-            }
-            
-            .search-tabs {
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Toast Notification */
+        /* Toast */
         .toast {
             position: fixed;
             bottom: 30px;
@@ -506,174 +526,374 @@
             padding: 15px 25px;
             background: var(--dark);
             color: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             transform: translateX(150%);
-            transition: transform 0.3s;
-            z-index: 1000;
+            transition: transform 0.4s ease;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 350px;
         }
 
-        .toast.show {
-            transform: translateX(0);
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .toast.warning { background: var(--warning); }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+            padding: 20px;
         }
 
-        .toast.success {
-            background: var(--success);
+        .modal-overlay.active {
+            display: flex;
         }
 
-        .toast.error {
-            background: var(--danger);
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            width: 40%;
+            font-weight: 600;
+            color: var(--secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            width: 60%;
+            color: var(--dark);
+            font-size: 1rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            
+            .header h1 { font-size: 1.5rem; }
+            
+            .dashboard { grid-template-columns: repeat(2, 1fr); gap: 15px; }
+            
+            .card { padding: 20px; }
+            .card .value { font-size: 1.5rem; }
+            
+            .charts-section { grid-template-columns: 1fr; }
+            
+            .search-tabs { justify-content: center; }
+            
+            .action-buttons { justify-content: center; }
+            
+            .btn { padding: 10px 18px; font-size: 0.85rem; }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard { grid-template-columns: repeat(2, 1fr); }
+            
+            .card { padding: 15px; }
+            .card .value { font-size: 1.3rem; }
+            .card h3 { font-size: 0.7rem; }
+            
+            .search-tab { padding: 10px 15px; font-size: 0.8rem; }
+        }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            
+            .header, .search-section, .action-buttons, .charts-section { display: none; }
+            
+            .results-section { box-shadow: none; padding: 0; }
+            
+            .dashboard { display: none; }
+            
+            .table-wrapper { max-height: none; overflow: visible; }
+            
+            table { min-width: auto; }
+            
+            th { background: #333 !important; -webkit-print-color-adjust: exact; }
         }
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <p>Loading data from Google Sheets...</p>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-alt"></i> Ticket Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1><i class="fas fa-building"></i> Villa Maintenance Ticket System</h1>
-            <p>Track and manage maintenance requests across all villas</p>
-        </div>
-
-        <!-- Setup Section -->
-        <div class="setup-section">
-            <h3><i class="fas fa-cog"></i> API Configuration</h3>
-            <p style="color: var(--secondary); margin-bottom: 15px;">Enter your Google Apps Script Web App URL:</p>
-            <div class="api-input-group">
-                <input type="text" id="apiUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
-                <button onclick="saveApiUrl()"><i class="fas fa-save"></i> Save & Connect</button>
+            <h1>
+                <i class="fas fa-building"></i>
+                Villa Maintenance Ticket System
+            </h1>
+            <p>Track and manage maintenance requests across all villas - 2025</p>
+            <div class="last-updated" id="lastUpdated">
+                <i class="fas fa-clock"></i> Loading...
             </div>
         </div>
 
         <!-- Dashboard Cards -->
         <div class="dashboard">
-            <div class="card">
+            <div class="card blue" onclick="showAllTickets()">
                 <div class="card-icon blue">
                     <i class="fas fa-ticket-alt"></i>
                 </div>
                 <h3>Total Tickets</h3>
-                <div class="value" id="totalTickets">-</div>
+                <div class="value" id="totalTickets">0</div>
             </div>
-            <div class="card">
+            <div class="card orange" onclick="filterPending()">
                 <div class="card-icon orange">
                     <i class="fas fa-clock"></i>
                 </div>
                 <h3>Pending</h3>
-                <div class="value" id="pendingTickets">-</div>
+                <div class="value" id="pendingTickets">0</div>
             </div>
-            <div class="card">
+            <div class="card green" onclick="filterCompleted()">
                 <div class="card-icon green">
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <h3>Completed</h3>
-                <div class="value" id="completedTickets">-</div>
+                <div class="value" id="completedTickets">0</div>
             </div>
-            <div class="card">
+            <div class="card red" onclick="showAllTickets()">
                 <div class="card-icon red">
                     <i class="fas fa-home"></i>
                 </div>
                 <h3>Total Villas</h3>
-                <div class="value" id="totalVillas">-</div>
+                <div class="value" id="totalVillas">0</div>
+            </div>
+            <div class="card purple" onclick="showAllTickets()">
+                <div class="card-icon purple">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <h3>Systems</h3>
+                <div class="value" id="totalSystems">0</div>
+            </div>
+            <div class="card cyan" onclick="showTodayTickets()">
+                <div class="card-icon cyan">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <h3>Today</h3>
+                <div class="value" id="todayTickets">0</div>
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <button class="btn btn-primary" onclick="loadAllData()">
-                <i class="fas fa-sync"></i> Refresh All Data
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Refresh Data
             </button>
-            <button class="btn btn-warning" onclick="loadPendingReport()">
+            <button class="btn btn-warning" onclick="filterPending()">
                 <i class="fas fa-exclamation-triangle"></i> Pending Report
             </button>
-            <button class="btn btn-success" onclick="exportToCSV()">
-                <i class="fas fa-download"></i> Export CSV
+            <button class="btn btn-success" onclick="exportCSV()">
+                <i class="fas fa-file-csv"></i> Export CSV
             </button>
-            <button class="btn btn-danger" onclick="printReport()">
+            <button class="btn btn-danger" onclick="window.print()">
                 <i class="fas fa-print"></i> Print Report
+            </button>
+            <button class="btn btn-secondary" onclick="showTodayTickets()">
+                <i class="fas fa-calendar-day"></i> Today's Tickets
             </button>
         </div>
 
         <!-- Search Section -->
         <div class="search-section">
+            <h2><i class="fas fa-search"></i> Search & Filter</h2>
+            
             <div class="search-tabs">
-                <button class="search-tab active" onclick="switchTab('villa')">
-                    <i class="fas fa-home"></i> By Villa
+                <button class="search-tab active" data-tab="villa" onclick="switchTab('villa')">
+                    <i class="fas fa-home"></i> By Villa/Flat
                 </button>
-                <button class="search-tab" onclick="switchTab('category')">
-                    <i class="fas fa-tags"></i> By Category
+                <button class="search-tab" data-tab="system" onclick="switchTab('system')">
+                    <i class="fas fa-cogs"></i> By System
                 </button>
-                <button class="search-tab" onclick="switchTab('complaint')">
-                    <i class="fas fa-search"></i> By Complaint No
+                <button class="search-tab" data-tab="mrf" onclick="switchTab('mrf')">
+                    <i class="fas fa-hashtag"></i> By MRF No
                 </button>
-                <button class="search-tab" onclick="switchTab('status')">
+                <button class="search-tab" data-tab="status" onclick="switchTab('status')">
                     <i class="fas fa-info-circle"></i> By Status
                 </button>
-            </div>
-
-            <!-- Villa Search -->
-            <div class="search-form active" id="villa-form">
-                <div class="form-group">
-                    <label>Select Villa</label>
-                    <select id="villaSelect" onchange="searchByVilla()">
-                        <option value="">-- Select Villa --</option>
-                    </select>
-                </div>
-                <button class="btn btn-primary" onclick="searchByVilla()">
-                    <i class="fas fa-search"></i> Search
+                <button class="search-tab" data-tab="date" onclick="switchTab('date')">
+                    <i class="fas fa-calendar"></i> By Date
+                </button>
+                <button class="search-tab" data-tab="action" onclick="switchTab('action')">
+                    <i class="fas fa-user"></i> By Action Taker
                 </button>
             </div>
 
-            <!-- Category Search -->
-            <div class="search-form" id="category-form">
+            <!-- Villa/Flat Search -->
+            <div class="search-panel active" id="panel-villa">
                 <div class="form-group">
-                    <label>Select Category</label>
-                    <select id="categorySelect" onchange="searchByCategory()">
-                        <option value="">-- Select Category --</option>
+                    <label><i class="fas fa-home"></i> Select Villa/Flat</label>
+                    <select id="villaSelect" onchange="filterByVilla(this.value)">
+                        <option value="">-- All Villas/Flats --</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" onclick="searchByCategory()">
-                    <i class="fas fa-search"></i> Search
-                </button>
             </div>
 
-            <!-- Complaint Search -->
-            <div class="search-form" id="complaint-form">
+            <!-- System Search -->
+            <div class="search-panel" id="panel-system">
                 <div class="form-group">
-                    <label>Complaint Number</label>
-                    <input type="text" id="complaintNo" placeholder="Enter complaint number...">
+                    <label><i class="fas fa-cogs"></i> Select System</label>
+                    <select id="systemSelect" onchange="filterBySystem(this.value)">
+                        <option value="">-- All Systems --</option>
+                    </select>
                 </div>
-                <button class="btn btn-primary" onclick="searchByComplaint()">
+            </div>
+
+            <!-- MRF Search -->
+            <div class="search-panel" id="panel-mrf">
+                <div class="form-group">
+                    <label><i class="fas fa-hashtag"></i> MRF Number</label>
+                    <input type="text" id="mrfInput" placeholder="Enter MRF number..." onkeyup="handleMrfSearch(event)">
+                </div>
+                <button class="btn btn-primary" onclick="searchByMrf()">
                     <i class="fas fa-search"></i> Search
                 </button>
             </div>
 
             <!-- Status Search -->
-            <div class="search-form" id="status-form">
+            <div class="search-panel" id="panel-status">
                 <div class="form-group">
-                    <label>Select Status</label>
-                    <select id="statusSelect" onchange="searchByStatus()">
-                        <option value="">-- Select Status --</option>
-                        <option value="pending">Pending</option>
-                        <option value="in progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="open">Open</option>
-                        <option value="closed">Closed</option>
+                    <label><i class="fas fa-info-circle"></i> Completion Status</label>
+                    <select id="statusSelect" onchange="filterByStatus(this.value)">
+                        <option value="">-- All Status --</option>
+                        <option value="yes">Completed (Yes)</option>
+                        <option value="no">Pending (No/Empty)</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" onclick="searchByStatus()">
+            </div>
+
+            <!-- Date Search -->
+            <div class="search-panel" id="panel-date">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> From Date</label>
+                    <input type="date" id="dateFrom">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> To Date</label>
+                    <input type="date" id="dateTo">
+                </div>
+                <button class="btn btn-primary" onclick="filterByDate()">
                     <i class="fas fa-search"></i> Search
                 </button>
+            </div>
+
+            <!-- Action Taker Search -->
+            <div class="search-panel" id="panel-action">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Action To Be Taken By</label>
+                    <select id="actionSelect" onchange="filterByActionTaker(this.value)">
+                        <option value="">-- All --</option>
+                    </select>
+                </div>
             </div>
         </div>
 
         <!-- Charts Section -->
         <div class="charts-section">
             <div class="chart-card">
-                <h3><i class="fas fa-chart-bar"></i> Tickets by Status</h3>
-                <div class="chart-bars" id="statusChart"></div>
+                <h3><i class="fas fa-chart-pie"></i> Tickets by System</h3>
+                <div class="chart-bars" id="systemChart"></div>
             </div>
             <div class="chart-card">
-                <h3><i class="fas fa-chart-pie"></i> Tickets by Category</h3>
-                <div class="chart-bars" id="categoryChart"></div>
+                <h3><i class="fas fa-chart-bar"></i> Tickets by Status</h3>
+                <div class="chart-bars" id="statusChart"></div>
             </div>
         </div>
 
@@ -681,21 +901,22 @@
         <div class="results-section">
             <div class="results-header">
                 <h2><i class="fas fa-list"></i> <span id="resultsTitle">All Tickets</span></h2>
-                <span class="results-count" id="resultsCount">0 records</span>
-            </div>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Loading data...</p>
+                <div class="results-meta">
+                    <span class="results-count" id="resultsCount">0 records</span>
+                    <button class="btn btn-secondary" onclick="showAllTickets()">
+                        <i class="fas fa-times"></i> Clear Filter
+                    </button>
+                </div>
             </div>
 
             <div class="no-data" id="noData" style="display: none;">
                 <i class="fas fa-inbox"></i>
-                <p>No data found</p>
+                <h3>No Data Found</h3>
+                <p>Try adjusting your search or filter criteria</p>
             </div>
 
-            <div class="table-container" id="tableContainer">
-                <table id="dataTable">
+            <div class="table-wrapper" id="tableWrapper">
+                <table>
                     <thead id="tableHead"></thead>
                     <tbody id="tableBody"></tbody>
                 </table>
@@ -703,357 +924,476 @@
         </div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast" id="toast"></div>
-
     <script>
-        // Global variables
-        let API_URL = localStorage.getItem('villaApiUrl') || '';
+        // =====================================================
+        // CONFIGURATION - YOUR GOOGLE SHEET CSV URL
+        // =====================================================
+        const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1Xu16-zkoAGo7FM2zvYxdg9Gj2h3vS7hYXxqgzqFmcTU/pub?gid=931447490&single=true&output=csv';
+        
+        // =====================================================
+        // COLUMN MAPPING - YOUR EXACT COLUMN NAMES
+        // =====================================================
+        const COLUMNS = {
+            DATE: 'date',
+            TIME: 'time',
+            MRF_NO: 'mrf no',
+            VILLA: 'flat/villa',
+            SYSTEM: 'system',
+            RECEPTIONIST: 'RECEPTIONIST NAME',
+            COMPLAINT_DETAILS: 'COMPLAINT DETAILS',
+            INTIMATED_BY: 'INTIMATED BY',
+            ACTION_BY: 'ACTION TO BE TAKEN BY',
+            ACTION_DATE: 'ACTION TAKEN DATE',
+            COMPLETED: 'COMPLETED.'
+        };
+
+        // =====================================================
+        // GLOBAL VARIABLES
+        // =====================================================
         let allData = [];
-        let currentData = [];
+        let filteredData = [];
         let headers = [];
 
-        // Initialize
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
         document.addEventListener('DOMContentLoaded', function() {
-            if (API_URL) {
-                document.getElementById('apiUrl').value = API_URL;
-                initializeApp();
-            }
+            loadData();
         });
 
-        // Save API URL
-        function saveApiUrl() {
-            const url = document.getElementById('apiUrl').value.trim();
-            if (!url) {
-                showToast('Please enter API URL', 'error');
+        // =====================================================
+        // DATA LOADING
+        // =====================================================
+        async function loadData() {
+            showLoading(true);
+            try {
+                const response = await fetch(GOOGLE_SHEET_CSV_URL);
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const csvText = await response.text();
+                parseCSV(csvText);
+                
+                populateDropdowns();
+                updateDashboard();
+                renderCharts();
+                showAllTickets();
+                
+                document.getElementById('lastUpdated').innerHTML = 
+                    `<i class="fas fa-clock"></i> Last updated: ${new Date().toLocaleString()}`;
+                
+                showToast('Data loaded successfully!', 'success');
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showToast('Error loading data. Check console for details.', 'error');
+            }
+            showLoading(false);
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            headers = parseCSVLine(lines[0]).map(h => h.trim());
+            
+            allData = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    const values = parseCSVLine(lines[i]);
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = (values[index] || '').trim();
+                    });
+                    // Only add rows that have at least one non-empty value
+                    if (Object.values(row).some(v => v !== '')) {
+                        allData.push(row);
+                    }
+                }
+            }
+            
+            filteredData = [...allData];
+            console.log('Loaded', allData.length, 'records');
+            console.log('Headers:', headers);
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else if (char !== '\r') {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result;
+        }
+
+        function refreshData() {
+            loadData();
+        }
+
+        // =====================================================
+        // FIND COLUMN HELPER
+        // =====================================================
+        function findColumn(searchName) {
+            // Try exact match first
+            if (headers.includes(searchName)) return searchName;
+            
+            // Try case-insensitive match
+            const found = headers.find(h => 
+                h.toLowerCase() === searchName.toLowerCase()
+            );
+            
+            return found || searchName;
+        }
+
+        // =====================================================
+        // DASHBOARD
+        // =====================================================
+        function updateDashboard() {
+            document.getElementById('totalTickets').textContent = allData.length;
+            
+            // Get unique villas
+            const villaCol = findColumn(COLUMNS.VILLA);
+            const villas = [...new Set(allData.map(row => row[villaCol]).filter(v => v))];
+            document.getElementById('totalVillas').textContent = villas.length;
+            
+            // Get unique systems
+            const systemCol = findColumn(COLUMNS.SYSTEM);
+            const systems = [...new Set(allData.map(row => row[systemCol]).filter(v => v))];
+            document.getElementById('totalSystems').textContent = systems.length;
+            
+            // Count completed vs pending
+            const completedCol = findColumn(COLUMNS.COMPLETED);
+            let completed = 0, pending = 0;
+            
+            allData.forEach(row => {
+                const status = (row[completedCol] || '').toLowerCase().trim();
+                if (status === 'yes' || status === 'done' || status === 'completed') {
+                    completed++;
+                } else {
+                    pending++;
+                }
+            });
+            
+            document.getElementById('completedTickets').textContent = completed;
+            document.getElementById('pendingTickets').textContent = pending;
+            
+            // Today's tickets
+            const dateCol = findColumn(COLUMNS.DATE);
+            const today = new Date().toLocaleDateString();
+            let todayCount = 0;
+            
+            allData.forEach(row => {
+                const rowDate = row[dateCol];
+                if (rowDate) {
+                    try {
+                        const d = new Date(rowDate);
+                        if (d.toLocaleDateString() === today) {
+                            todayCount++;
+                        }
+                    } catch (e) {}
+                }
+            });
+            
+            document.getElementById('todayTickets').textContent = todayCount;
+        }
+
+        // =====================================================
+        // DROPDOWNS
+        // =====================================================
+        function populateDropdowns() {
+            // Villa dropdown
+            const villaCol = findColumn(COLUMNS.VILLA);
+            const villas = [...new Set(allData.map(row => row[villaCol]).filter(v => v))].sort();
+            const villaSelect = document.getElementById('villaSelect');
+            villaSelect.innerHTML = '<option value="">-- All Villas/Flats --</option>';
+            villas.forEach(villa => {
+                villaSelect.innerHTML += `<option value="${villa}">${villa}</option>`;
+            });
+            
+            // System dropdown
+            const systemCol = findColumn(COLUMNS.SYSTEM);
+            const systems = [...new Set(allData.map(row => row[systemCol]).filter(v => v))].sort();
+            const systemSelect = document.getElementById('systemSelect');
+            systemSelect.innerHTML = '<option value="">-- All Systems --</option>';
+            systems.forEach(system => {
+                systemSelect.innerHTML += `<option value="${system}">${system}</option>`;
+            });
+            
+            // Action Taker dropdown
+            const actionCol = findColumn(COLUMNS.ACTION_BY);
+            const actionTakers = [...new Set(allData.map(row => row[actionCol]).filter(v => v))].sort();
+            const actionSelect = document.getElementById('actionSelect');
+            actionSelect.innerHTML = '<option value="">-- All --</option>';
+            actionTakers.forEach(person => {
+                actionSelect.innerHTML += `<option value="${person}">${person}</option>`;
+            });
+        }
+
+        // =====================================================
+        // FILTERING FUNCTIONS
+        // =====================================================
+        function showAllTickets() {
+            filteredData = [...allData];
+            renderTable();
+            updateResultsHeader('All Tickets', filteredData.length);
+            resetDropdowns();
+        }
+
+        function filterByVilla(villa) {
+            if (!villa) {
+                showAllTickets();
                 return;
             }
-            API_URL = url;
-            localStorage.setItem('villaApiUrl', url);
-            showToast('API URL saved! Connecting...', 'success');
-            initializeApp();
+            
+            const col = findColumn(COLUMNS.VILLA);
+            filteredData = allData.filter(row => 
+                (row[col] || '').toLowerCase() === villa.toLowerCase()
+            );
+            renderTable();
+            updateResultsHeader(`Villa/Flat: ${villa}`, filteredData.length);
         }
 
-        // Initialize App
-        async function initializeApp() {
-            if (!API_URL) return;
-            
-            showLoading(true);
-            try {
-                await loadSummary();
-                await loadVillaList();
-                await loadCategoryList();
-                await loadAllData();
-                showToast('Connected successfully!', 'success');
-            } catch (error) {
-                showToast('Connection failed: ' + error.message, 'error');
+        function filterBySystem(system) {
+            if (!system) {
+                showAllTickets();
+                return;
             }
-            showLoading(false);
-        }
-
-        // API Call
-        async function apiCall(action, params = {}) {
-            const url = new URL(API_URL);
-            url.searchParams.append('action', action);
-            Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
             
-            const response = await fetch(url.toString());
-            if (!response.ok) throw new Error('Network error');
-            return await response.json();
+            const col = findColumn(COLUMNS.SYSTEM);
+            filteredData = allData.filter(row => 
+                (row[col] || '').toLowerCase() === system.toLowerCase()
+            );
+            renderTable();
+            updateResultsHeader(`System: ${system}`, filteredData.length);
         }
 
-        // Load Summary
-        async function loadSummary() {
-            try {
-                const summary = await apiCall('getSummary');
-                document.getElementById('totalTickets').textContent = summary.total || 0;
-                document.getElementById('totalVillas').textContent = Object.keys(summary.byVilla || {}).length;
+        function filterByStatus(status) {
+            if (!status) {
+                showAllTickets();
+                return;
+            }
+            
+            const col = findColumn(COLUMNS.COMPLETED);
+            filteredData = allData.filter(row => {
+                const value = (row[col] || '').toLowerCase().trim();
+                if (status === 'yes') {
+                    return value === 'yes' || value === 'done' || value === 'completed';
+                } else {
+                    return value === '' || value === 'no' || value === 'pending';
+                }
+            });
+            renderTable();
+            updateResultsHeader(`Status: ${status === 'yes' ? 'Completed' : 'Pending'}`, filteredData.length);
+        }
+
+        function filterByActionTaker(person) {
+            if (!person) {
+                showAllTickets();
+                return;
+            }
+            
+            const col = findColumn(COLUMNS.ACTION_BY);
+            filteredData = allData.filter(row => 
+                (row[col] || '').toLowerCase() === person.toLowerCase()
+            );
+            renderTable();
+            updateResultsHeader(`Action By: ${person}`, filteredData.length);
+        }
+
+        function searchByMrf() {
+            const searchTerm = document.getElementById('mrfInput').value.trim();
+            if (!searchTerm) {
+                showAllTickets();
+                return;
+            }
+            
+            const col = findColumn(COLUMNS.MRF_NO);
+            filteredData = allData.filter(row => 
+                (row[col] || '').toLowerCase().includes(searchTerm.toLowerCase())
+            );
+            renderTable();
+            updateResultsHeader(`MRF No: ${searchTerm}`, filteredData.length);
+        }
+
+        function handleMrfSearch(event) {
+            if (event.key === 'Enter') {
+                searchByMrf();
+            }
+        }
+
+        function filterByDate() {
+            const fromDate = document.getElementById('dateFrom').value;
+            const toDate = document.getElementById('dateTo').value;
+            
+            if (!fromDate && !toDate) {
+                showAllTickets();
+                return;
+            }
+            
+            const col = findColumn(COLUMNS.DATE);
+            filteredData = allData.filter(row => {
+                const dateStr = row[col];
+                if (!dateStr) return false;
                 
-                // Count pending and completed
-                let pending = 0, completed = 0;
-                Object.entries(summary.byStatus || {}).forEach(([status, count]) => {
-                    const s = status.toLowerCase();
-                    if (s.includes('pending') || s.includes('open') || s.includes('progress')) {
-                        pending += count;
-                    }
-                    if (s.includes('completed') || s.includes('closed') || s.includes('done')) {
-                        completed += count;
-                    }
-                });
+                try {
+                    const rowDate = new Date(dateStr);
+                    if (isNaN(rowDate.getTime())) return false;
+                    
+                    if (fromDate && new Date(fromDate) > rowDate) return false;
+                    if (toDate && new Date(toDate) < rowDate) return false;
+                    
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+            
+            renderTable();
+            updateResultsHeader(`Date: ${fromDate || 'Start'} to ${toDate || 'End'}`, filteredData.length);
+        }
+
+        function filterPending() {
+            const col = findColumn(COLUMNS.COMPLETED);
+            filteredData = allData.filter(row => {
+                const status = (row[col] || '').toLowerCase().trim();
+                return status === '' || status === 'no' || status === 'pending';
+            });
+            renderTable();
+            updateResultsHeader('Pending Tickets', filteredData.length);
+        }
+
+        function filterCompleted() {
+            const col = findColumn(COLUMNS.COMPLETED);
+            filteredData = allData.filter(row => {
+                const status = (row[col] || '').toLowerCase().trim();
+                return status === 'yes' || status === 'done' || status === 'completed';
+            });
+            renderTable();
+            updateResultsHeader('Completed Tickets', filteredData.length);
+        }
+
+        function showTodayTickets() {
+            const col = findColumn(COLUMNS.DATE);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            filteredData = allData.filter(row => {
+                const dateStr = row[col];
+                if (!dateStr) return false;
                 
-                document.getElementById('pendingTickets').textContent = pending;
-                document.getElementById('completedTickets').textContent = completed;
-
-                // Render charts
-                renderStatusChart(summary.byStatus || {});
-                renderCategoryChart(summary.byCategory || {});
-            } catch (error) {
-                console.error('Error loading summary:', error);
-            }
-        }
-
-        // Load Villa List
-        async function loadVillaList() {
-            try {
-                const result = await apiCall('getVillaList');
-                const select = document.getElementById('villaSelect');
-                select.innerHTML = '<option value="">-- Select Villa --</option>';
-                (result.villas || []).forEach(villa => {
-                    select.innerHTML += `<option value="${villa}">${villa}</option>`;
-                });
-            } catch (error) {
-                console.error('Error loading villas:', error);
-            }
-        }
-
-        // Load Category List
-        async function loadCategoryList() {
-            try {
-                const result = await apiCall('getCategoryList');
-                const select = document.getElementById('categorySelect');
-                select.innerHTML = '<option value="">-- Select Category --</option>';
-                (result.categories || []).forEach(cat => {
-                    select.innerHTML += `<option value="${cat}">${cat}</option>`;
-                });
-            } catch (error) {
-                console.error('Error loading categories:', error);
-            }
-        }
-
-        // Load All Data
-        async function loadAllData() {
-            showLoading(true);
-            try {
-                const result = await apiCall('getAllData');
-                headers = result.headers || [];
-                allData = result.data || [];
-                currentData = allData;
-                renderTable(currentData);
-                updateResultsHeader('All Tickets', currentData.length);
-            } catch (error) {
-                showToast('Error loading data: ' + error.message, 'error');
-            }
-            showLoading(false);
-        }
-
-        // Search Functions
-        async function searchByVilla() {
-            const villa = document.getElementById('villaSelect').value;
-            if (!villa) return;
+                try {
+                    const rowDate = new Date(dateStr);
+                    rowDate.setHours(0, 0, 0, 0);
+                    return rowDate.getTime() === today.getTime();
+                } catch (e) {
+                    return false;
+                }
+            });
             
-            showLoading(true);
-            try {
-                const result = await apiCall('getByVilla', { villa });
-                currentData = result.data || [];
-                renderTable(currentData);
-                updateResultsHeader(`Villa: ${villa}`, currentData.length);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-            showLoading(false);
+            renderTable();
+            updateResultsHeader("Today's Tickets", filteredData.length);
         }
 
-        async function searchByCategory() {
-            const category = document.getElementById('categorySelect').value;
-            if (!category) return;
-            
-            showLoading(true);
-            try {
-                const result = await apiCall('getByCategory', { category });
-                currentData = result.data || [];
-                renderTable(currentData);
-                updateResultsHeader(`Category: ${category}`, currentData.length);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-            showLoading(false);
+        function resetDropdowns() {
+            document.getElementById('villaSelect').value = '';
+            document.getElementById('systemSelect').value = '';
+            document.getElementById('statusSelect').value = '';
+            document.getElementById('actionSelect').value = '';
+            document.getElementById('mrfInput').value = '';
+            document.getElementById('dateFrom').value = '';
+            document.getElementById('dateTo').value = '';
         }
 
-        async function searchByComplaint() {
-            const complaintNo = document.getElementById('complaintNo').value;
-            if (!complaintNo) return;
-            
-            showLoading(true);
-            try {
-                const result = await apiCall('getByComplaintNo', { complaintNo });
-                currentData = result.data || [];
-                renderTable(currentData);
-                updateResultsHeader(`Complaint: ${complaintNo}`, currentData.length);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-            showLoading(false);
-        }
-
-        async function searchByStatus() {
-            const status = document.getElementById('statusSelect').value;
-            if (!status) return;
-            
-            showLoading(true);
-            try {
-                const result = await apiCall('getByStatus', { status });
-                currentData = result.data || [];
-                renderTable(currentData);
-                updateResultsHeader(`Status: ${status}`, currentData.length);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-            showLoading(false);
-        }
-
-        async function loadPendingReport() {
-            showLoading(true);
-            try {
-                const result = await apiCall('getPendingReport');
-                currentData = result.data || [];
-                renderTable(currentData);
-                updateResultsHeader('Pending Tickets', currentData.length);
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-            showLoading(false);
-        }
-
-        // Render Table
-        function renderTable(data) {
+        // =====================================================
+        // TABLE RENDERING
+        // =====================================================
+        function renderTable() {
             const tableHead = document.getElementById('tableHead');
             const tableBody = document.getElementById('tableBody');
             const noData = document.getElementById('noData');
-            const tableContainer = document.getElementById('tableContainer');
-
-            if (!data || data.length === 0) {
+            const tableWrapper = document.getElementById('tableWrapper');
+            
+            if (filteredData.length === 0) {
                 noData.style.display = 'block';
-                tableContainer.style.display = 'none';
+                tableWrapper.style.display = 'none';
                 return;
             }
-
+            
             noData.style.display = 'none';
-            tableContainer.style.display = 'block';
-
-            // Get headers from first data object
-            const keys = Object.keys(data[0]);
+            tableWrapper.style.display = 'block';
             
-            // Render header
-            tableHead.innerHTML = '<tr>' + keys.map(key => `<th>${key}</th>`).join('') + '</tr>';
-
+            // Column display names
+            const displayHeaders = {
+                [COLUMNS.DATE]: 'Date',
+                [COLUMNS.TIME]: 'Time',
+                [COLUMNS.MRF_NO]: 'MRF No',
+                [COLUMNS.VILLA]: 'Villa/Flat',
+                [COLUMNS.SYSTEM]: 'System',
+                [COLUMNS.RECEPTIONIST]: 'Receptionist',
+                [COLUMNS.COMPLAINT_DETAILS]: 'Complaint Details',
+                [COLUMNS.INTIMATED_BY]: 'Intimated By',
+                [COLUMNS.ACTION_BY]: 'Action By',
+                [COLUMNS.ACTION_DATE]: 'Action Date',
+                [COLUMNS.COMPLETED]: 'Status'
+            };
+            
+            // Render headers
+            tableHead.innerHTML = '<tr>' + 
+                headers.map(h => `<th>${displayHeaders[h] || h}</th>`).join('') + 
+                '<th>View</th></tr>';
+            
             // Render body
-            tableBody.innerHTML = data.map(row => {
-                return '<tr>' + keys.map(key => {
-                    let value = row[key] || '';
-                    
-                    // Format status with badge
-                    if (key.toLowerCase().includes('status')) {
-                        value = formatStatus(value);
-                    }
-                    
-                    return `<td>${value}</td>`;
-                }).join('') + '</tr>';
+            tableBody.innerHTML = filteredData.map((row, index) => {
+                return '<tr>' + 
+                    headers.map(h => {
+                        let value = row[h] || '-';
+                        
+                        // Format status/completed column
+                        if (h.toLowerCase() === COLUMNS.COMPLETED.toLowerCase() || h.toLowerCase().includes('completed')) {
+                            value = formatStatus(value);
+                        }
+                        
+                        // Truncate long text
+                        if (typeof value === 'string' && value.length > 50 && !value.includes('status-badge')) {
+                            value = `<span title="${value}">${value.substring(0, 50)}...</span>`;
+                        }
+                        
+                        return `<td>${value}</td>`;
+                    }).join('') +
+                    `<td>
+                        <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.75rem;" onclick="showDetail(${index})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>` +
+                    '</tr>';
             }).join('');
         }
 
-        // Format Status Badge
         function formatStatus(status) {
-            const s = String(status).toLowerCase();
-            let className = 'status-badge ';
-            
-            if (s.includes('pending')) className += 'status-pending';
-            else if (s.includes('completed') || s.includes('done') || s.includes('closed')) className += 'status-completed';
-            else if (s.includes('progress')) className += 'status-progress';
-            else if (s.includes('open')) className += 'status-open';
-            else className += 'status-pending';
-            
-            return `<span class="${className}">${status}</span>`;
-        }
-
-        // Render Charts
-        function renderStatusChart(data) {
-            const container = document.getElementById('statusChart');
-            const total = Object.values(data).reduce((a, b) => a + b, 0);
-            const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-            
-            container.innerHTML = Object.entries(data).map(([label, value], index) => {
-                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
-                return `
-                    <div class="chart-bar-item">
-                        <span class="chart-bar-label">${label}</span>
-                        <div class="chart-bar-container">
-                            <div class="chart-bar" style="width: ${percentage}%; background: ${colors[index % colors.length]}">
-                                ${value}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function renderCategoryChart(data) {
-            const container = document.getElementById('categoryChart');
-            const total = Object.values(data).reduce((a, b) => a + b, 0);
-            const colors = ['#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1'];
-            
-            // Show top 5 categories
-            const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 5);
-            
-            container.innerHTML = sorted.map(([label, value], index) => {
-                const percentage = total > 0 ? (value / total * 100).toFixed(1) : 0;
-                return `
-                    <div class="chart-bar-item">
-                        <span class="chart-bar-label">${label.substring(0, 15)}${label.length > 15 ? '...' : ''}</span>
-                        <div class="chart-bar-container">
-                            <div class="chart-bar" style="width: ${percentage}%; background: ${colors[index % colors.length]}">
-                                ${value}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Tab Switching
-        function switchTab(tab) {
-            document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.search-form').forEach(f => f.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(`${tab}-form`).classList.add('active');
-        }
-
-        // Export to CSV
-        function exportToCSV() {
-            if (!currentData || currentData.length === 0) {
-                showToast('No data to export', 'error');
-                return;
+            if (!status || status === '-') {
+                return '<span class="status-badge status-pending">Pending</span>';
             }
-
-            const keys = Object.keys(currentData[0]);
-            let csv = keys.join(',') + '\n';
             
-            currentData.forEach(row => {
-                csv += keys.map(key => {
-                    let value = String(row[key] || '').replace(/"/g, '""');
-                    return `"${value}"`;
-                }).join(',') + '\n';
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `villa_maintenance_report_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+            const s = status.toLowerCase().trim();
             
-            showToast('CSV exported successfully!', 'success');
-        }
-
-        // Print Report
-        function printReport() {
-            window.print();
-        }
-
-        // Utility Functions
-        function showLoading(show) {
-            document.getElementById('loading').classList.toggle('active', show);
+            if (s === 'yes' || s === 'done' || s === 'completed') {
+                return '<span class="status-badge status-completed">Completed</span>';
+            } else if (s === 'no' || s === 'pending') {
+                return '<span class="status-badge status-pending">Pending</span>';
+            } else if (s.includes('progress')) {
+                return '<span class="status-badge status-progress">In Progress</span>';
+            } else {
+                return `<span class="status-badge status-pending">${status}</span>`;
+            }
         }
 
         function updateResultsHeader(title, count) {
@@ -1061,17 +1401,200 @@
             document.getElementById('resultsCount').textContent = `${count} records`;
         }
 
-        function showToast(message, type = '') {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show ' + type;
-            setTimeout(() => toast.classList.remove('show'), 3000);
+        // =====================================================
+        // CHARTS
+        // =====================================================
+        function renderCharts() {
+            renderSystemChart();
+            renderStatusChart();
         }
 
-        // Enter key support for complaint search
-        document.getElementById('complaintNo')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') searchByComplaint();
+        function renderSystemChart() {
+            const col = findColumn(COLUMNS.SYSTEM);
+            const counts = {};
+            
+            allData.forEach(row => {
+                const system = row[col] || 'Unknown';
+                counts[system] = (counts[system] || 0) + 1;
+            });
+            
+            const container = document.getElementById('systemChart');
+            const total = allData.length;
+            const colors = ['#667eea', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+            
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 7);
+            
+            container.innerHTML = sorted.map(([label, value], index) => {
+                const percentage = total > 0 ? (value / total * 100) : 0;
+                return `
+                    <div class="chart-bar-item">
+                        <span class="chart-bar-label" title="${label}">${label}</span>
+                        <div class="chart-bar-container">
+                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${colors[index % colors.length]}">
+                                ${value}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderStatusChart() {
+            const col = findColumn(COLUMNS.COMPLETED);
+            let completed = 0, pending = 0;
+            
+            allData.forEach(row => {
+                const status = (row[col] || '').toLowerCase().trim();
+                if (status === 'yes' || status === 'done' || status === 'completed') {
+                    completed++;
+                } else {
+                    pending++;
+                }
+            });
+            
+            const container = document.getElementById('statusChart');
+            const total = allData.length;
+            
+            const data = [
+                { label: 'Completed', value: completed, color: '#10b981' },
+                { label: 'Pending', value: pending, color: '#f59e0b' }
+            ];
+            
+            container.innerHTML = data.map(item => {
+                const percentage = total > 0 ? (item.value / total * 100) : 0;
+                return `
+                    <div class="chart-bar-item">
+                        <span class="chart-bar-label">${item.label}</span>
+                        <div class="chart-bar-container">
+                            <div class="chart-bar" style="width: ${Math.max(percentage, 5)}%; background: ${item.color}">
+                                ${item.value} (${percentage.toFixed(1)}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // =====================================================
+        // MODAL
+        // =====================================================
+        function showDetail(index) {
+            const row = filteredData[index];
+            const modal = document.getElementById('detailModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            const displayNames = {
+                [COLUMNS.DATE]: '📅 Date',
+                [COLUMNS.TIME]: '🕐 Time',
+                [COLUMNS.MRF_NO]: '🔢 MRF No',
+                [COLUMNS.VILLA]: '🏠 Villa/Flat',
+                [COLUMNS.SYSTEM]: '⚙️ System',
+                [COLUMNS.RECEPTIONIST]: '👤 Receptionist',
+                [COLUMNS.COMPLAINT_DETAILS]: '📝 Complaint Details',
+                [COLUMNS.INTIMATED_BY]: '📞 Intimated By',
+                [COLUMNS.ACTION_BY]: '🔧 Action To Be Taken By',
+                [COLUMNS.ACTION_DATE]: '📆 Action Taken Date',
+                [COLUMNS.COMPLETED]: '✅ Status'
+            };
+            
+            modalBody.innerHTML = headers.map(header => {
+                let value = row[header] || '-';
+                
+                // Format status in modal
+                if (header.toLowerCase() === COLUMNS.COMPLETED.toLowerCase() || header.toLowerCase().includes('completed')) {
+                    const s = (value || '').toLowerCase().trim();
+                    if (s === 'yes' || s === 'done' || s === 'completed') {
+                        value = '<span class="status-badge status-completed">Completed</span>';
+                    } else {
+                        value = '<span class="status-badge status-pending">Pending</span>';
+                    }
+                }
+                
+                return `
+                    <div class="detail-row">
+                        <div class="detail-label">${displayNames[header] || header}</div>
+                        <div class="detail-value">${value}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('detailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
         });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // =====================================================
+        // TABS
+        // =====================================================
+        function switchTab(tab) {
+            document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            document.querySelectorAll('.search-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`panel-${tab}`).classList.add('active');
+        }
+
+        // =====================================================
+        // EXPORT CSV
+        // =====================================================
+        function exportCSV() {
+            if (filteredData.length === 0) {
+                showToast('No data to export', 'warning');
+                return;
+            }
+            
+            // BOM for Excel to recognize UTF-8
+            let csv = '\uFEFF';
+            csv += headers.join(',') + '\n';
+            
+            filteredData.forEach(row => {
+                csv += headers.map(h => {
+                    let value = String(row[h] || '').replace(/"/g, '""');
+                    return `"${value}"`;
+                }).join(',') + '\n';
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `villa_maintenance_report_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+            showToast('CSV exported successfully!', 'success');
+        }
+
+        // =====================================================
+        // UTILITIES
+        // =====================================================
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('active', show);
+        }
+
+        function showToast(message, type = '') {
+            const toast = document.getElementById('toast');
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'error' ? 'exclamation-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            toast.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+            toast.className = `toast show ${type}`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
     </script>
 </body>
 </html>
