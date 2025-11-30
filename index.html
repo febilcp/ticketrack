@@ -159,6 +159,35 @@
             return { total: filteredTickets.length, completed, pending, inProgress };
         }
 
+        // Get system-wise pending counts
+        function getSystemPendingStats() {
+            const pendingTickets = allTickets.filter(t => 
+                !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === ''
+            );
+            
+            const systemStats = {};
+            pendingTickets.forEach(ticket => {
+                const system = ticket.system || 'Other';
+                systemStats[system] = (systemStats[system] || 0) + 1;
+            });
+            
+            // Define system colors and icons
+            const systemConfig = {
+                'AC': { color: 'blue', icon: '❄️', label: 'AC' },
+                'Electrical': { color: 'yellow', icon: '⚡', label: 'Electrical' },
+                'Plumbing': { color: 'cyan', icon: '🚰', label: 'Plumbing' },
+                'Carpentry': { color: 'amber', icon: '🔨', label: 'Carpentry' },
+                'Painting': { color: 'purple', icon: '🎨', label: 'Painting' },
+                'Mason': { color: 'gray', icon: '🧱', label: 'Mason' }
+            };
+            
+            return Object.keys(systemConfig).map(system => ({
+                system: system,
+                count: systemStats[system] || 0,
+                ...systemConfig[system]
+            }));
+        }
+
         // Get unique values for dropdowns
         function getUniqueValues(field) {
             const values = [...new Set(allTickets.map(t => t[field]).filter(v => v))];
@@ -169,6 +198,7 @@
         function render() {
             const stats = getStats();
             const systems = getUniqueValues('system');
+            const systemPending = getSystemPendingStats();
             
             // Get only the most recent 25 tickets (REVERSE because newest is at bottom of sheet)
             const recentTickets = [...filteredTickets].reverse().slice(0, 25);
@@ -209,6 +239,30 @@
                                     <p class="text-purple-600 text-sm font-medium">In Progress</p>
                                     <p class="text-3xl font-bold text-purple-900">${stats.inProgress}</p>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- System-wise Pending Summary -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">⚙️ Pending Work by System</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                ${systemPending.map(sys => `
+                                    <div class="bg-gradient-to-br from-${sys.color}-50 to-${sys.color}-100 rounded-lg p-4 border-l-4 border-${sys.color}-500 hover:shadow-md transition-shadow cursor-pointer" 
+                                         onclick="updateFilter('system', '${sys.system}'); updateFilter('status', 'pending');">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-2xl">${sys.icon}</span>
+                                            <span class="text-xs font-semibold text-${sys.color}-600 bg-white px-2 py-1 rounded">PENDING</span>
+                                        </div>
+                                        <p class="text-${sys.color}-800 font-semibold text-sm mb-1">${sys.label}</p>
+                                        <p class="text-3xl font-bold text-${sys.color}-900">${sys.count}</p>
+                                        <p class="text-xs text-${sys.color}-600 mt-1">Click to filter</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                                <p class="text-sm text-gray-600">
+                                    <strong>Total Pending:</strong> ${systemPending.reduce((sum, sys) => sum + sys.count, 0)} tickets across all systems
+                                </p>
                             </div>
                         </div>
 
