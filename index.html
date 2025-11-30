@@ -29,6 +29,8 @@
             system: '',
             status: ''
         };
+        let chatHistory = [];
+        let showChat = false;
 
         // Parse CSV
         function parseCSV(text) {
@@ -143,6 +145,145 @@
             };
             applyFilters();
             render();
+        }
+
+        // Toggle chat window
+        function toggleChat() {
+            showChat = !showChat;
+            render();
+        }
+
+        // Send chat message
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const question = input.value.trim();
+            
+            if (!question) return;
+            
+            // Add user message to chat
+            chatHistory.push({ role: 'user', content: question });
+            input.value = '';
+            render();
+            
+            try {
+                // Prepare data summary for AI
+                const dataSummary = {
+                    totalTickets: allTickets.length,
+                    systems: [...new Set(allTickets.map(t => t.system))],
+                    villas: [...new Set(allTickets.map(t => t.villa))],
+                    recentTickets: allTickets.slice(-50) // Last 50 tickets for context
+                };
+                
+                const systemPrompt = `You are a helpful AI assistant for a villa maintenance dashboard. You have access to maintenance ticket data. 
+                
+Current data summary:
+- Total tickets: ${dataSummary.totalTickets}
+- Systems: ${dataSummary.systems.join(', ')}
+- Villas: ${dataSummary.villas.join(', ')}
+
+Answer questions about maintenance tickets, complaints, statistics, and trends. Be concise and helpful.`;
+
+                const userPrompt = `Based on this maintenance data, please answer: ${question}
+
+Here's a sample of recent tickets:
+${JSON.stringify(dataSummary.recentTickets.slice(0, 10), null, 2)}
+
+Full ticket data context: ${allTickets.length} total tickets across all villas and systems.`;
+
+                // Call Claude AI API
+                const response = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 1000,
+                        system: systemPrompt,
+                        messages: [
+                            ...chatHistory.filter(m => m.role !== 'user' || m.content !== question).map(m => ({
+                                role: m.role,
+                                content: m.content
+                            })),
+                            { role: 'user', content: userPrompt }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.content && data.content[0]) {
+                    const answer = data.content[0].text;
+                    chatHistory.push({ role: 'assistant', content: answer });
+                } else {
+                    throw new Error('Invalid response from AI');
+                }
+                
+            } catch (error) {
+                console.error('Chat error:', error);
+                
+                // Fallback: Simple rule-based answers
+                const answer = getSimpleAnswer(question);
+                chatHistory.push({ role: 'assistant', content: answer });
+            }
+            
+            render();
+        }
+
+        // Simple rule-based fallback answers
+        function getSimpleAnswer(question) {
+            const q = question.toLowerCase();
+            
+            // Extract villa number from question
+            const villaMatch = q.match(/villa\s*(\d+)/i) || q.match(/flat\s*(\d+)/i);
+            const villa = villaMatch ? villaMatch[0] : null;
+            
+            // Extract system from question
+            const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
+            const system = systems.find(s => q.includes(s));
+            
+            if (villa && system) {
+                const filtered = allTickets.filter(t => 
+                    t.villa.toLowerCase().includes(villa.toLowerCase()) && 
+                    t.system.toLowerCase().includes(system)
+                );
+                return `I found ${filtered.length} ${system} complaint(s) for ${villa}. ${filtered.length > 0 ? 'Recent issues: ' + filtered.slice(-3).map(t => t.details).join('; ') : ''}`;
+            }
+            
+            if (villa) {
+                const filtered = allTickets.filter(t => t.villa.toLowerCase().includes(villa.toLowerCase()));
+                const systemBreakdown = {};
+                filtered.forEach(t => {
+                    systemBreakdown[t.system] = (systemBreakdown[t.system] || 0) + 1;
+                });
+                return `${villa} has ${filtered.length} total complaints. Breakdown: ${Object.entries(systemBreakdown).map(([s, c]) => `${s}: ${c}`).join(', ')}`;
+            }
+            
+            if (system) {
+                const filtered = allTickets.filter(t => t.system.toLowerCase().includes(system));
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                return `There are ${filtered.length} total ${system} complaints. ${pending} are currently pending.`;
+            }
+            
+            // General stats
+            if (q.includes('total') || q.includes('how many')) {
+                return `We have ${allTickets.length} total maintenance tickets. ${allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length} are pending, ${allTickets.filter(t => t.status.toLowerCase().includes('completed')).length} are completed.`;
+            }
+            
+            return `I can help you with questions like:
+- "How many AC complaints for Villa 130?"
+- "What are the pending plumbing issues?"
+- "How many total tickets for Villa 95?"
+- "Show me electrical complaints"
+
+Try asking a specific question about villas, systems, or maintenance statistics!`;
+        }
+
+        // Handle Enter key in chat
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
         }
 
         // Export to CSV
@@ -389,6 +530,86 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- AI Chat Bot -->
+                <div class="fixed bottom-6 right-6 z-50">
+                    ${showChat ? `
+                        <div class="bg-white rounded-lg shadow-2xl w-96 h-[500px] flex flex-col">
+                            <!-- Chat Header -->
+                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                                    </svg>
+                                    <div>
+                                        <h3 class="font-semibold">AI Assistant</h3>
+                                        <p class="text-xs opacity-90">Ask about maintenance data</p>
+                                    </div>
+                                </div>
+                                <button onclick="toggleChat()" class="hover:bg-white/20 rounded p-1">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Chat Messages -->
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                                ${chatHistory.length === 0 ? `
+                                    <div class="text-center text-gray-500 mt-8">
+                                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                        </svg>
+                                        <p class="text-sm mb-2">👋 Hi! I'm your AI assistant</p>
+                                        <p class="text-xs">Ask me about:</p>
+                                        <ul class="text-xs mt-2 space-y-1">
+                                            <li>• Villa complaints</li>
+                                            <li>• System statistics</li>
+                                            <li>• Pending issues</li>
+                                        </ul>
+                                    </div>
+                                ` : chatHistory.map((msg, idx) => `
+                                    <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
+                                        <div class="${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800'} rounded-lg p-3 max-w-[80%] shadow">
+                                            <p class="text-sm whitespace-pre-wrap">${msg.content}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Chat Input -->
+                            <div class="p-4 border-t bg-white rounded-b-lg">
+                                <div class="flex gap-2">
+                                    <input
+                                        id="chatInput"
+                                        type="text"
+                                        placeholder="Ask me anything..."
+                                        onkeypress="handleChatKeyPress(event)"
+                                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                    />
+                                    <button
+                                        onclick="sendChatMessage()"
+                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">Try: "How many AC complaints for Villa 130?"</p>
+                            </div>
+                        </div>
+                    ` : `
+                        <button
+                            onclick="toggleChat()"
+                            class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                        </button>
+                    `}
                 </div>
             `;
             
