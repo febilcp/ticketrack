@@ -234,49 +234,154 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
         function getSimpleAnswer(question) {
             const q = question.toLowerCase();
             
+            // Parse dates - check for yesterday, today, last week, etc.
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            function parseTicketDate(dateStr) {
+                // Handle formats like "29-November-2025" or "6-July-2025"
+                const parts = dateStr.split('-');
+                if (parts.length === 3) {
+                    const months = {
+                        'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+                        'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+                    };
+                    const day = parseInt(parts[0]);
+                    const month = months[parts[1].toLowerCase()];
+                    const year = parseInt(parts[2]);
+                    return new Date(year, month, day);
+                }
+                return null;
+            }
+            
             // Extract villa number from question
             const villaMatch = q.match(/villa\s*(\d+)/i) || q.match(/flat\s*(\d+)/i);
-            const villa = villaMatch ? villaMatch[0] : null;
+            const villa = villaMatch ? `Villa ${villaMatch[1]}` : null;
             
             // Extract system from question
             const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
             const system = systems.find(s => q.includes(s));
             
-            if (villa && system) {
-                const filtered = allTickets.filter(t => 
-                    t.villa.toLowerCase().includes(villa.toLowerCase()) && 
-                    t.system.toLowerCase().includes(system)
-                );
-                return `I found ${filtered.length} ${system} complaint(s) for ${villa}. ${filtered.length > 0 ? 'Recent issues: ' + filtered.slice(-3).map(t => t.details).join('; ') : ''}`;
+            // Question: "Which villa has most AC complaints?" or "Which villa have more time ac complaints?"
+            if ((q.includes('which villa') || q.includes('what villa')) && (q.includes('most') || q.includes('more') || q.includes('many time'))) {
+                let targetSystem = system;
+                if (q.includes('ac')) targetSystem = 'ac';
+                
+                const villaCounts = {};
+                allTickets.forEach(t => {
+                    if (!targetSystem || t.system.toLowerCase().includes(targetSystem)) {
+                        villaCounts[t.villa] = (villaCounts[t.villa] || 0) + 1;
+                    }
+                });
+                
+                const sorted = Object.entries(villaCounts).sort((a, b) => b[1] - a[1]);
+                const top5 = sorted.slice(0, 5);
+                
+                if (top5.length > 0) {
+                    return `📊 Villas with most ${targetSystem || 'complaints'}:\n\n${top5.map((v, i) => `${i + 1}. ${v[0]}: ${v[1]} complaints`).join('\n')}\n\n${top5[0][0]} has the most with ${top5[0][1]} complaints.`;
+                }
             }
             
+            // Question: "Yesterday how many complaints for AC?"
+            if (q.includes('yesterday')) {
+                const yesterdayStr = yesterday.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/ /g, '-');
+                const yesterdayTickets = allTickets.filter(t => {
+                    const ticketDate = parseTicketDate(t.date);
+                    return ticketDate && ticketDate.toDateString() === yesterday.toDateString();
+                });
+                
+                if (system) {
+                    const filtered = yesterdayTickets.filter(t => t.system.toLowerCase().includes(system));
+                    return `📅 Yesterday (${yesterdayStr}), there ${filtered.length === 1 ? 'was' : 'were'} ${filtered.length} ${system.toUpperCase()} complaint${filtered.length !== 1 ? 's' : ''}.\n\n${filtered.length > 0 ? 'Details:\n' + filtered.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
+                }
+                return `📅 Yesterday (${yesterdayStr}), there were ${yesterdayTickets.length} total complaints.`;
+            }
+            
+            // Question: "Today how many complaints?"
+            if (q.includes('today')) {
+                const todayTickets = allTickets.filter(t => {
+                    const ticketDate = parseTicketDate(t.date);
+                    return ticketDate && ticketDate.toDateString() === today.toDateString();
+                });
+                
+                if (system) {
+                    const filtered = todayTickets.filter(t => t.system.toLowerCase().includes(system));
+                    return `📅 Today, there ${filtered.length === 1 ? 'is' : 'are'} ${filtered.length} ${system.toUpperCase()} complaint${filtered.length !== 1 ? 's' : ''}.\n\n${filtered.length > 0 ? 'Details:\n' + filtered.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
+                }
+                return `📅 Today, there are ${todayTickets.length} total complaints.`;
+            }
+            
+            // Question: "Any pending in Villa 55?"
+            if (villa && (q.includes('pending') || q.includes('open'))) {
+                const villaTickets = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
+                const pending = villaTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '');
+                
+                if (pending.length > 0) {
+                    const systemBreakdown = {};
+                    pending.forEach(t => {
+                        systemBreakdown[t.system] = (systemBreakdown[t.system] || 0) + 1;
+                    });
+                    return `⚠️ ${villa} has ${pending.length} pending complaint${pending.length !== 1 ? 's' : ''}:\n\n${Object.entries(systemBreakdown).map(([s, c]) => `• ${s}: ${c}`).join('\n')}\n\nRecent issues:\n${pending.slice(-3).map(t => `• ${t.system}: ${t.details} (MRF: ${t.mrfNo})`).join('\n')}`;
+                } else {
+                    return `✅ Great news! ${villa} has no pending complaints. All issues are resolved.`;
+                }
+            }
+            
+            // Question: "Villa X how many times AC complaint?"
+            if (villa && system) {
+                const filtered = allTickets.filter(t => 
+                    t.villa.toLowerCase() === villa.toLowerCase() && 
+                    t.system.toLowerCase().includes(system)
+                );
+                
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
+                return `🏠 ${villa} - ${system.toUpperCase()} Complaints:\n\n📊 Total: ${filtered.length} complaints\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\n${filtered.length > 0 ? 'Recent issues:\n' + filtered.slice(-3).map(t => `• ${t.date}: ${t.details} (${t.status})`).join('\n') : 'No complaints found.'}`;
+            }
+            
+            // Question: "Villa X complaints" or "Any issues in Villa X?"
             if (villa) {
-                const filtered = allTickets.filter(t => t.villa.toLowerCase().includes(villa.toLowerCase()));
+                const filtered = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
                 const systemBreakdown = {};
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
+                
                 filtered.forEach(t => {
                     systemBreakdown[t.system] = (systemBreakdown[t.system] || 0) + 1;
                 });
-                return `${villa} has ${filtered.length} total complaints. Breakdown: ${Object.entries(systemBreakdown).map(([s, c]) => `${s}: ${c}`).join(', ')}`;
+                
+                return `🏠 ${villa} Summary:\n\n📊 Total complaints: ${filtered.length}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(systemBreakdown).map(([s, c]) => `• ${s}: ${c}`).join('\n')}\n\n${pending.length > 0 ? '\nPending Issues:\n' + pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n') : ''}`;
             }
             
+            // Question: "AC complaints" or "Show me electrical issues"
             if (system) {
                 const filtered = allTickets.filter(t => t.system.toLowerCase().includes(system));
                 const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                return `There are ${filtered.length} total ${system} complaints. ${pending} are currently pending.`;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
+                // Get top villas with this issue
+                const villaCounts = {};
+                filtered.forEach(t => {
+                    villaCounts[t.villa] = (villaCounts[t.villa] || 0) + 1;
+                });
+                const topVillas = Object.entries(villaCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                
+                return `🔧 ${system.toUpperCase()} System Report:\n\n📊 Total: ${filtered.length} complaints\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\nTop Affected Villas:\n${topVillas.map(([v, c], i) => `${i + 1}. ${v}: ${c} complaints`).join('\n')}\n\n${pending > 0 ? `Recent pending:\n${filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).slice(-3).map(t => `• ${t.villa}: ${t.details}`).join('\n')}` : ''}`;
             }
             
             // General stats
-            if (q.includes('total') || q.includes('how many')) {
-                return `We have ${allTickets.length} total maintenance tickets. ${allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length} are pending, ${allTickets.filter(t => t.status.toLowerCase().includes('completed')).length} are completed.`;
+            if (q.includes('total') || q.includes('how many complaint')) {
+                const pending = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = allTickets.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
+                return `📊 Overall Statistics:\n\n🎫 Total tickets: ${allTickets.length}\n⏳ Pending: ${pending}\n✅ Completed: ${completed}\n\nBy System:\n${Object.entries(allTickets.reduce((acc, t) => {
+                    acc[t.system] = (acc[t.system] || 0) + 1;
+                    return acc;
+                }, {})).sort((a, b) => b[1] - a[1]).map(([s, c]) => `• ${s}: ${c}`).join('\n')}`;
             }
             
-            return `I can help you with questions like:
-- "How many AC complaints for Villa 130?"
-- "What are the pending plumbing issues?"
-- "How many total tickets for Villa 95?"
-- "Show me electrical complaints"
-
-Try asking a specific question about villas, systems, or maintenance statistics!`;
+            return `I can help you with questions like:\n\n📅 Time-based:\n• "Yesterday how many AC complaints?"\n• "Today's complaints?"\n\n🏠 Villa-specific:\n• "Villa 130 how many AC complaints?"\n• "Any pending in Villa 55?"\n• "Villa 95 all complaints?"\n\n🔧 System analysis:\n• "Which villa has most AC problems?"\n• "Show electrical complaints"\n• "Pending plumbing work?"\n\n💡 Try asking a specific question!`;
         }
 
         // Handle Enter key in chat
