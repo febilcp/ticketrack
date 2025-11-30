@@ -18,7 +18,7 @@
 
     <script>
         // Configuration
-        const SHEET_ID = '1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4';
+        const SHEET_ID = '1Xu16-zkoAGo7FM2zvYxdg9Gj2h3vS7hYXxqgzqFmcTU';
         const GID = '931447490';
 
         let allTickets = [];
@@ -167,6 +167,9 @@
             const stats = getStats();
             const systems = getUniqueValues('system');
             
+            // Get only the most recent 25 tickets
+            const recentTickets = filteredTickets.slice(0, 25);
+            
             const html = `
                 <div class="min-h-screen p-4 md:p-6">
                     <div class="max-w-7xl mx-auto">
@@ -251,7 +254,10 @@
 
                         <!-- Table -->
                         <div class="bg-white rounded-lg shadow-sm p-6">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">📋 Maintenance Tickets (${filteredTickets.length})</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold text-gray-800">📋 Recent Maintenance Tickets</h2>
+                                <span class="text-sm text-gray-600">Showing latest 25 of ${filteredTickets.length} tickets</span>
+                            </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full min-w-max">
                                     <thead>
@@ -268,13 +274,13 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        ${filteredTickets.length === 0 ? `
+                                        ${recentTickets.length === 0 ? `
                                             <tr>
                                                 <td colspan="9" class="text-center py-8 text-gray-500">
                                                     No tickets found. Try adjusting your filters.
                                                 </td>
                                             </tr>
-                                        ` : filteredTickets.map(ticket => `
+                                        ` : recentTickets.map(ticket => `
                                             <tr class="border-b border-gray-100 hover:bg-gray-50">
                                                 <td class="py-3 px-4 text-sm text-gray-700">${ticket.date}</td>
                                                 <td class="py-3 px-4 text-sm text-gray-700">${ticket.time}</td>
