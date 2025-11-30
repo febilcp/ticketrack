@@ -5,426 +5,315 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Villa Maintenance Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/recharts@2.5.0/dist/Recharts.js"></script>
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gray-50">
+    <div id="app">
+        <div class="min-h-screen flex items-center justify-center">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-xl text-gray-600">Loading...</p>
+            </div>
+        </div>
+    </div>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+    <script>
+        // Configuration
+        const SHEET_ID = '1Xu16-zkoAGo7FM2zvYxdg9Gj2h3vS7hYXxqgzqFmcTU';
+        const GID = '931447490';
 
-        const VillaMaintenanceDashboard = () => {
-            const [tickets, setTickets] = useState([]);
-            const [loading, setLoading] = useState(true);
-            const [error, setError] = useState(null);
-            const [filters, setFilters] = useState({
-                villa: '',
-                category: '',
-                status: '',
-                complaintNumber: ''
-            });
+        let allTickets = [];
+        let filteredTickets = [];
+        let filters = {
+            mrfNo: '',
+            villa: '',
+            system: '',
+            status: ''
+        };
 
-            // YOUR GOOGLE SHEET ID AND TAB ID
-            const SHEET_ID = '1Xu16-zkoAGo7FM2zvYxdg9Gj2h3vS7hYXxqgzqFmcTU';
-            const GID = '931447490'; // The specific tab/sheet
-
-            const loadData = async () => {
-                setLoading(true);
-                setError(null);
-                console.log('Starting to load data...');
+        // Parse CSV
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            const tickets = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i];
+                const values = [];
+                let current = '';
+                let inQuotes = false;
                 
-                try {
-                    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                    console.log('Fetching from:', url);
-                    
-                    const response = await fetch(url);
-                    console.log('Response status:', response.status);
-                    
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    
-                    const csvText = await response.text();
-                    console.log('CSV received, length:', csvText.length);
-                    console.log('First 200 chars:', csvText.substring(0, 200));
-                    
-                    // Parse CSV
-                    const lines = csvText.split('\n').filter(line => line.trim());
-                    console.log('Total lines:', lines.length);
-                    
-                    if (lines.length < 2) {
-                        throw new Error('Sheet appears to be empty or has only headers');
-                    }
-                    
-                    const formattedTickets = [];
-                    
-                    // Skip header row (index 0), start from index 1
-                    for (let i = 1; i < lines.length; i++) {
-                        const line = lines[i];
-                        const values = [];
-                        let current = '';
-                        let inQuotes = false;
-                        
-                        for (let char of line) {
-                            if (char === '"') {
-                                inQuotes = !inQuotes;
-                            } else if (char === ',' && !inQuotes) {
-                                values.push(current.trim().replace(/^"|"$/g, ''));
-                                current = '';
-                            } else {
-                                current += char;
-                            }
-                        }
+                for (let char of line) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
                         values.push(current.trim().replace(/^"|"$/g, ''));
-                        
-                        // Only add if we have a MRF number
-                        if (values[2] && values[2].trim()) {
-                            formattedTickets.push({
-                                id: i,
-                                date: values[0] || '',
-                                time: values[1] || '',
-                                complaintNumber: values[2] || '',
-                                villa: values[3] || '',
-                                category: values[4] || '',
-                                receptionist: values[5] || '',
-                                description: values[6] || '',
-                                intimatedBy: values[7] || '',
-                                assignedTo: values[8] || '',
-                                completionDate: values[9] || '',
-                                status: values[10] || 'Pending'
-                            });
-                        }
+                        current = '';
+                    } else {
+                        current += char;
                     }
-                    
-                    console.log('Parsed tickets:', formattedTickets.length);
-                    
-                    if (formattedTickets.length === 0) {
-                        throw new Error('No valid tickets found in the sheet');
-                    }
-                    
-                    setTickets(formattedTickets);
-                    
-                } catch (err) {
-                    console.error('Error loading data:', err);
-                    setError(err.message);
-                    
-                    // Load demo data
-                    console.log('Loading demo data...');
-                    setTickets([
-                        { id: 1, date: '1-january-2025', time: '9:41 AM', complaintNumber: '25/33047', villa: 'Ballroom', category: 'Carpentry', receptionist: 'Karishma', description: 'Wall tiles to fixed', intimatedBy: 'Mr siva', assignedTo: 'Joel/Linggam/Collins', completionDate: '8-Jan-2025', status: 'Completed' },
-                        { id: 2, date: '1-january-2025', time: '11:30 AM', complaintNumber: '25/33049', villa: 'Flat 511', category: 'Carpentry', receptionist: 'Karishma', description: 'Kids room bed noisy', intimatedBy: 'Tenant', assignedTo: 'Joel/Linggam/Collins', completionDate: '2-Jan-2025', status: 'Completed' },
-                        { id: 3, date: '1-january-2025', time: '11:24 AM', complaintNumber: '25/33048', villa: 'Building 1', category: 'Electrical', receptionist: 'Karishma', description: 'Glassdoor entrance light', intimatedBy: 'Mr Siva', assignedTo: 'Loshan /Liton(Riviera)', completionDate: '2-Jan-2025', status: 'Completed' },
-                    ]);
-                } finally {
-                    setLoading(false);
                 }
-            };
-
-            useEffect(() => {
-                loadData();
-            }, []);
-
-            const filteredTickets = tickets.filter(ticket => {
-                return (
-                    (filters.villa === '' || ticket.villa.toLowerCase().includes(filters.villa.toLowerCase())) &&
-                    (filters.category === '' || ticket.category.toLowerCase().includes(filters.category.toLowerCase())) &&
-                    (filters.status === '' || ticket.status.toLowerCase().includes(filters.status.toLowerCase())) &&
-                    (filters.complaintNumber === '' || ticket.complaintNumber.toLowerCase().includes(filters.complaintNumber.toLowerCase()))
-                );
-            });
-
-            // Analytics
-            const categoryData = Object.entries(
-                filteredTickets.reduce((acc, ticket) => {
-                    acc[ticket.category] = (acc[ticket.category] || 0) + 1;
-                    return acc;
-                }, {})
-            ).map(([name, value]) => ({ name, value }));
-
-            const statusData = Object.entries(
-                filteredTickets.reduce((acc, ticket) => {
-                    acc[ticket.status] = (acc[ticket.status] || 0) + 1;
-                    return acc;
-                }, {})
-            ).map(([name, value]) => ({ name, value }));
-
-            const villaData = Object.entries(
-                filteredTickets.reduce((acc, ticket) => {
-                    acc[ticket.villa] = (acc[ticket.villa] || 0) + 1;
-                    return acc;
-                }, {})
-            ).map(([name, value]) => ({ name, value }));
-
-            const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
-
-            const exportToCSV = () => {
-                const headers = ['Date', 'Time', 'MRF No', 'Flat/Villa', 'System', 'Receptionist', 'Complaint Details', 'Intimated By', 'Action Taker', 'Action Date', 'Status'];
-                const csv = [
-                    headers.join(','),
-                    ...filteredTickets.map(t => [
-                        t.date, t.time, t.complaintNumber, t.villa, t.category,
-                        t.receptionist, `"${t.description}"`, t.intimatedBy, t.assignedTo, t.completionDate, t.status
-                    ].join(','))
-                ].join('\n');
+                values.push(current.trim().replace(/^"|"$/g, ''));
                 
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'maintenance_report.csv';
-                a.click();
-            };
+                if (values[2] && values[2].trim()) {
+                    tickets.push({
+                        date: values[0] || '',
+                        time: values[1] || '',
+                        mrfNo: values[2] || '',
+                        villa: values[3] || '',
+                        system: values[4] || '',
+                        receptionist: values[5] || '',
+                        details: values[6] || '',
+                        intimatedBy: values[7] || '',
+                        actionTaker: values[8] || '',
+                        actionDate: values[9] || '',
+                        status: values[10] || 'Pending'
+                    });
+                }
+            }
+            
+            return tickets;
+        }
 
-            if (loading) {
-                return (
-                    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-xl text-gray-600">Loading dashboard...</p>
-                            <p className="text-sm text-gray-500 mt-2">Check browser console (F12) for details</p>
+        // Load data from Google Sheets
+        async function loadData() {
+            try {
+                console.log('Loading data...');
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                console.log('Data loaded, parsing...');
+                allTickets = parseCSV(text);
+                console.log('Tickets found:', allTickets.length);
+                
+                applyFilters();
+                render();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center p-6">
+                        <div class="bg-red-50 border-l-4 border-red-500 p-6 max-w-2xl">
+                            <h2 class="text-xl font-bold text-red-800 mb-2">Error Loading Data</h2>
+                            <p class="text-red-700 mb-4">${error.message}</p>
+                            <div class="text-sm text-red-600">
+                                <p class="font-semibold mb-2">Please check:</p>
+                                <ol class="list-decimal ml-5 space-y-1">
+                                    <li>Your Google Sheet is shared as "Anyone with the link can view"</li>
+                                    <li>The sheet ID is correct: ${SHEET_ID}</li>
+                                    <li>The GID (tab ID) is correct: ${GID}</li>
+                                </ol>
+                            </div>
+                            <button onclick="loadData()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                                Try Again
+                            </button>
                         </div>
                     </div>
-                );
+                `;
             }
+        }
 
-            return (
-                <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-                    <div className="max-w-7xl mx-auto">
-                        {/* Header */}
-                        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Villa Maintenance Dashboard</h1>
-                                <button
-                                    onClick={loadData}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        // Apply filters
+        function applyFilters() {
+            filteredTickets = allTickets.filter(ticket => {
+                return (
+                    (!filters.mrfNo || ticket.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
+                    (!filters.villa || ticket.villa.toLowerCase().includes(filters.villa.toLowerCase())) &&
+                    (!filters.system || ticket.system.toLowerCase().includes(filters.system.toLowerCase())) &&
+                    (!filters.status || ticket.status.toLowerCase().includes(filters.status.toLowerCase()))
+                );
+            });
+        }
+
+        // Update filter
+        function updateFilter(key, value) {
+            filters[key] = value;
+            applyFilters();
+            render();
+        }
+
+        // Export to CSV
+        function exportCSV() {
+            const headers = ['Date', 'Time', 'MRF No', 'Villa', 'System', 'Receptionist', 'Details', 'Intimated By', 'Action Taker', 'Action Date', 'Status'];
+            const rows = filteredTickets.map(t => [
+                t.date, t.time, t.mrfNo, t.villa, t.system, t.receptionist,
+                `"${t.details}"`, t.intimatedBy, t.actionTaker, t.actionDate, t.status
+            ]);
+            
+            const csv = [headers, ...rows].map(row => row.join(',\t')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `maintenance_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+
+        // Get statistics
+        function getStats() {
+            const completed = filteredTickets.filter(t => t.status.toLowerCase().includes('completed')).length;
+            const pending = filteredTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '').length;
+            const inProgress = filteredTickets.length - completed - pending;
+            
+            return { total: filteredTickets.length, completed, pending, inProgress };
+        }
+
+        // Get unique values for dropdowns
+        function getUniqueValues(field) {
+            const values = [...new Set(allTickets.map(t => t[field]).filter(v => v))];
+            return values.sort();
+        }
+
+        // Render the page
+        function render() {
+            const stats = getStats();
+            const systems = getUniqueValues('system');
+            
+            const html = `
+                <div class="min-h-screen p-4 md:p-6">
+                    <div class="max-w-7xl mx-auto">
+                        <!-- Header -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                                <div>
+                                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🏢 Villa Maintenance Dashboard</h1>
+                                    <p class="text-gray-600 mt-1">Track and manage maintenance requests - 2025</p>
+                                </div>
+                                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                     </svg>
-                                    Refresh Data
+                                    Refresh
                                 </button>
                             </div>
 
-                            {error && (
-                                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                                    <div className="flex">
-                                        <div className="flex-shrink-0">
-                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div className="ml-3">
-                                            <h3 className="text-sm font-medium text-red-800">Error loading Google Sheet data</h3>
-                                            <p className="text-sm text-red-700 mt-1">{error}</p>
-                                            <div className="mt-2 text-sm text-red-700">
-                                                <p className="font-semibold">To fix this:</p>
-                                                <ol className="list-decimal ml-5 mt-1">
-                                                    <li>Open your Google Sheet</li>
-                                                    <li>Click "Share" button (top right)</li>
-                                                    <li>Change to "Anyone with the link" → "Viewer"</li>
-                                                    <li>Click "Copy link" and verify it works in incognito mode</li>
-                                                    <li>Refresh this page</li>
-                                                </ol>
-                                            </div>
-                                            <p className="text-sm text-red-600 mt-2 font-medium">
-                                                Showing demo data below for testing
-                                            </p>
-                                        </div>
-                                    </div>
+                            <!-- Stats -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-blue-50 rounded-lg p-4">
+                                    <p class="text-blue-600 text-sm font-medium">Total Tickets</p>
+                                    <p class="text-3xl font-bold text-blue-900">${stats.total}</p>
                                 </div>
-                            )}
-
-                            {/* Summary Cards */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                                <div className="bg-blue-50 rounded-lg p-4">
-                                    <p className="text-blue-600 text-sm font-medium">Total Tickets</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-blue-900">{filteredTickets.length}</p>
+                                <div class="bg-yellow-50 rounded-lg p-4">
+                                    <p class="text-yellow-600 text-sm font-medium">Pending</p>
+                                    <p class="text-3xl font-bold text-yellow-900">${stats.pending}</p>
                                 </div>
-                                <div className="bg-yellow-50 rounded-lg p-4">
-                                    <p className="text-yellow-600 text-sm font-medium">Pending</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-yellow-900">
-                                        {filteredTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '').length}
-                                    </p>
+                                <div class="bg-green-50 rounded-lg p-4">
+                                    <p class="text-green-600 text-sm font-medium">Completed</p>
+                                    <p class="text-3xl font-bold text-green-900">${stats.completed}</p>
                                 </div>
-                                <div className="bg-green-50 rounded-lg p-4">
-                                    <p className="text-green-600 text-sm font-medium">Completed</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-green-900">
-                                        {filteredTickets.filter(t => t.status && t.status.toLowerCase().includes('completed')).length}
-                                    </p>
-                                </div>
-                                <div className="bg-purple-50 rounded-lg p-4">
-                                    <p className="text-purple-600 text-sm font-medium">In Progress</p>
-                                    <p className="text-2xl md:text-3xl font-bold text-purple-900">
-                                        {filteredTickets.filter(t => t.status && t.status.toLowerCase().includes('progress')).length}
-                                    </p>
+                                <div class="bg-purple-50 rounded-lg p-4">
+                                    <p class="text-purple-600 text-sm font-medium">In Progress</p>
+                                    <p class="text-3xl font-bold text-purple-900">${stats.inProgress}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Filters */}
-                        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <h2 className="text-lg md:text-xl font-semibold text-gray-800 mb-4">Filters</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Filters -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">🔍 Search & Filter</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <input
                                     type="text"
-                                    placeholder="Complaint #"
-                                    value={filters.complaintNumber}
-                                    onChange={(e) => setFilters({...filters, complaintNumber: e.target.value})}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Search MRF No (e.g., 25/33047)"
+                                    value="${filters.mrfNo}"
+                                    onchange="updateFilter('mrfNo', this.value)"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Villa"
-                                    value={filters.villa}
-                                    onChange={(e) => setFilters({...filters, villa: e.target.value})}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Category"
-                                    value={filters.category}
-                                    onChange={(e) => setFilters({...filters, category: e.target.value})}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    placeholder="Search Villa/Flat"
+                                    value="${filters.villa}"
+                                    onchange="updateFilter('villa', this.value)"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 />
                                 <select
-                                    value={filters.status}
-                                    onChange={(e) => setFilters({...filters, status: e.target.value})}
-                                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    onchange="updateFilter('system', this.value)"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+                                    <option value="">All Systems</option>
+                                    ${systems.map(s => `<option value="${s}" ${filters.system === s ? 'selected' : ''}>${s}</option>`).join('')}
+                                </select>
+                                <select
+                                    onchange="updateFilter('status', this.value)"
+                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                 >
                                     <option value="">All Status</option>
-                                    <option value="Pending">Pending</option>
-                                    <option value="Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
+                                    <option value="completed" ${filters.status === 'completed' ? 'selected' : ''}>Completed</option>
+                                    <option value="pending" ${filters.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="progress" ${filters.status === 'progress' ? 'selected' : ''}>In Progress</option>
                                 </select>
                             </div>
-                            <button
-                                onClick={exportToCSV}
-                                className="mt-4 flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            <button onclick="exportCSV()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                 </svg>
                                 Export to CSV
                             </button>
                         </div>
 
-                        {/* Charts */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Tickets by Category</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={categoryData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="value" fill="#3b82f6" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm p-6">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Status Distribution</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <PieChart>
-                                        <Pie
-                                            data={statusData}
-                                            cx="50%"
-                                            cy="50%"
-                                            labelLine={false}
-                                            label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                                            outerRadius={100}
-                                            dataKey="value"
-                                        >
-                                            {statusData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow-sm p-6 lg:col-span-2">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Tickets by Villa</h3>
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart data={villaData}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Bar dataKey="value" fill="#10b981" />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-
-                        {/* Table */}
-                        <div className="bg-white rounded-lg shadow-sm p-6">
-                            <h2 className="text-xl font-semibold text-gray-800 mb-4">Maintenance Tickets</h2>
-                            <div className="overflow-x-auto">
-                                <table className="w-full min-w-max">
+                        <!-- Table -->
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">📋 Maintenance Tickets (${filteredTickets.length})</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full min-w-max">
                                     <thead>
-                                        <tr className="border-b-2 border-gray-200">
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Time</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">MRF No</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Villa/Flat</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">System</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Complaint Details</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Intimated By</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Action Taker</th>
-                                            <th className="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                                        <tr class="border-b-2 border-gray-200">
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Time</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">MRF No</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Villa/Flat</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">System</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Details</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Intimated By</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Action Taker</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredTickets.map((ticket) => (
-                                            <tr key={ticket.id} className="border-b border-gray-100 hover:bg-gray-50">
-                                                <td className="py-3 px-4 text-gray-700 text-sm">{ticket.date}</td>
-                                                <td className="py-3 px-4 text-gray-700 text-sm">{ticket.time}</td>
-                                                <td className="py-3 px-4 font-medium text-blue-600">{ticket.complaintNumber}</td>
-                                                <td className="py-3 px-4 text-gray-700">{ticket.villa}</td>
-                                                <td className="py-3 px-4">
-                                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs md:text-sm">
-                                                        {ticket.category}
+                                        ${filteredTickets.length === 0 ? `
+                                            <tr>
+                                                <td colspan="9" class="text-center py-8 text-gray-500">
+                                                    No tickets found. Try adjusting your filters.
+                                                </td>
+                                            </tr>
+                                        ` : filteredTickets.map(ticket => `
+                                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.date}</td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.time}</td>
+                                                <td class="py-3 px-4 font-medium text-blue-600">${ticket.mrfNo}</td>
+                                                <td class="py-3 px-4 text-gray-700">${ticket.villa}</td>
+                                                <td class="py-3 px-4">
+                                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
+                                                        ${ticket.system}
                                                     </span>
                                                 </td>
-                                                <td className="py-3 px-4 text-gray-700 max-w-xs truncate">{ticket.description}</td>
-                                                <td className="py-3 px-4 text-gray-700 text-sm">{ticket.intimatedBy || '-'}</td>
-                                                <td className="py-3 px-4 text-gray-700">{ticket.assignedTo || '-'}</td>
-                                                <td className="py-3 px-4">
-                                                    <span className={`px-2 py-1 rounded text-xs md:text-sm font-medium whitespace-nowrap ${
-                                                        ticket.status && ticket.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
-                                                        ticket.status && ticket.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' :
+                                                <td class="py-3 px-4 text-gray-700 max-w-xs truncate" title="${ticket.details}">
+                                                    ${ticket.details}
+                                                </td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.intimatedBy || '-'}</td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.actionTaker || '-'}</td>
+                                                <td class="py-3 px-4">
+                                                    <span class="px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
+                                                        ticket.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
+                                                        ticket.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' :
                                                         'bg-gray-100 text-gray-800'
-                                                    }`}>
-                                                        {ticket.status || 'Pending'}
+                                                    }">
+                                                        ${ticket.status || 'Pending'}
                                                     </span>
                                                 </td>
                                             </tr>
-                                        ))}
+                                        `).join('')}
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            {filteredTickets.length === 0 && (
-                                <div className="text-center py-8 text-gray-500">
-                                    No tickets found matching the filters
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
-            );
-        };
+            `;
+            
+            document.getElementById('app').innerHTML = html;
+        }
 
-        // Render the app
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<VillaMaintenanceDashboard />);
+        // Load data on page load
+        loadData();
     </script>
 </body>
 </html>
