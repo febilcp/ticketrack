@@ -114,9 +114,12 @@
         // Apply filters
         function applyFilters() {
             filteredTickets = allTickets.filter(ticket => {
+                // Exact match for villa if filter is set, otherwise show all
+                const villaMatch = !filters.villa || ticket.villa.toLowerCase() === filters.villa.toLowerCase();
+                
                 return (
+                    villaMatch &&
                     (!filters.mrfNo || ticket.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
-                    (!filters.villa || ticket.villa.toLowerCase().includes(filters.villa.toLowerCase())) &&
                     (!filters.system || ticket.system.toLowerCase().includes(filters.system.toLowerCase())) &&
                     (!filters.status || ticket.status.toLowerCase().includes(filters.status.toLowerCase()))
                 );
