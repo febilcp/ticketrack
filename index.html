@@ -167,8 +167,8 @@
             const stats = getStats();
             const systems = getUniqueValues('system');
             
-            // Get only the most recent 25 tickets (REVERSE to show newest first)
-            const recentTickets = filteredTickets.slice().reverse().slice(0, 25);
+            // Get only the most recent 25 tickets (REVERSE because newest is at bottom of sheet)
+            const recentTickets = [...filteredTickets].reverse().slice(0, 25);
             
             const html = `
                 <div class="min-h-screen p-4 md:p-6">
