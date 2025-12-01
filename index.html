@@ -352,6 +352,108 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
             const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
             const system = systems.find(s => q.includes(s));
             
+            // Search in complaint details for specific items/issues
+            function searchInDetails(keywords) {
+                return allTickets.filter(t => {
+                    const details = t.details.toLowerCase();
+                    return keywords.some(keyword => details.includes(keyword.toLowerCase()));
+                });
+            }
+            
+            // Check if question is about specific items in details
+            const detailKeywords = {
+                'washing machine': ['washing machine', 'washer'],
+                'dishwasher': ['dishwasher', 'dish washer'],
+                'fridge': ['fridge', 'refrigerator'],
+                'microwave': ['microwave', 'micro wave'],
+                'oven': ['oven'],
+                'water heater': ['water heater', 'heater', 'geyser'],
+                'sink': ['sink', 'basin'],
+                'toilet': ['toilet', 'wc', 'commode'],
+                'shower': ['shower'],
+                'tap': ['tap', 'faucet'],
+                'door': ['door'],
+                'window': ['window'],
+                'lock': ['lock', 'locker'],
+                'paint': ['paint', 'painting', 'interlock'],
+                'tile': ['tile', 'tiles'],
+                'ceiling': ['ceiling'],
+                'wall': ['wall'],
+                'floor': ['floor'],
+                'light': ['light', 'bulb', 'lamp'],
+                'fan': ['fan'],
+                'switch': ['switch', 'socket'],
+                'drain': ['drain', 'drainage', 'clogged', 'blocked'],
+                'leak': ['leak', 'leaking', 'leakage'],
+                'noise': ['noise', 'noisy', 'sound'],
+                'smell': ['smell', 'odor', 'odour'],
+                'crack': ['crack', 'cracked'],
+                'damage': ['damage', 'damaged', 'broken']
+            };
+            
+            // Find if question contains any detail keywords
+            let foundDetailKeyword = null;
+            let searchKeywords = [];
+            
+            for (const [item, keywords] of Object.entries(detailKeywords)) {
+                if (keywords.some(kw => q.includes(kw))) {
+                    foundDetailKeyword = item;
+                    searchKeywords = keywords;
+                    break;
+                }
+            }
+            
+            // Question: Search in details - "How many washing machine complaints?"
+            if (foundDetailKeyword) {
+                const filtered = searchInDetails(searchKeywords);
+                
+                if (filtered.length === 0) {
+                    return `❌ No complaints found related to "${foundDetailKeyword}".`;
+                }
+                
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
+                // Get villas/flats with this issue
+                const locations = {};
+                filtered.forEach(t => {
+                    locations[t.villa] = (locations[t.villa] || 0) + 1;
+                });
+                const sortedLocations = Object.entries(locations).sort((a, b) => b[1] - a[1]);
+                
+                // Get systems involved
+                const systemsInvolved = {};
+                filtered.forEach(t => {
+                    systemsInvolved[t.system] = (systemsInvolved[t.system] || 0) + 1;
+                });
+                
+                let response = `🔍 Search Results for "${foundDetailKeyword.toUpperCase()}":\n\n`;
+                response += `📊 Total Complaints: ${filtered.length}\n`;
+                response += `✅ Completed: ${completed}\n`;
+                response += `⏳ Pending: ${pending}\n\n`;
+                
+                response += `🏠 Affected Locations (${sortedLocations.length}):\n`;
+                response += sortedLocations.slice(0, 10).map(([loc, count], i) => 
+                    `${i + 1}. ${loc}: ${count} complaint${count > 1 ? 's' : ''}`
+                ).join('\n');
+                
+                if (sortedLocations.length > 10) {
+                    response += `\n...and ${sortedLocations.length - 10} more locations`;
+                }
+                
+                response += `\n\n🔧 Systems Involved:\n`;
+                response += Object.entries(systemsInvolved).map(([sys, count]) => 
+                    `• ${sys}: ${count}`
+                ).join('\n');
+                
+                response += `\n\n📋 Recent Examples:\n`;
+                response += filtered.slice(-3).map(t => 
+                    `• ${t.villa} (${t.date}): ${t.details.substring(0, 60)}${t.details.length > 60 ? '...' : ''}`
+                ).join('\n');
+                
+                return response;
+            }
+            
             // Question: "Which villa has most AC complaints?" or "Which villa have more time ac complaints?"
             if ((q.includes('which villa') || q.includes('what villa') || q.includes('which flat') || q.includes('what flat')) && (q.includes('most') || q.includes('more') || q.includes('many time'))) {
                 let targetSystem = system;
@@ -401,9 +503,12 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 return `📅 Today, there are ${todayTickets.length} total complaints.`;
             }
             
-            // Question: "Any pending in Villa 55?"
+            // Question: "Any pending in Villa 55?" or "Any pending in Flat 511?"
             if (villa && (q.includes('pending') || q.includes('open'))) {
-                const villaTickets = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
+                const villaTickets = allTickets.filter(t => 
+                    t.villa.toLowerCase() === villa.toLowerCase() || 
+                    t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')
+                );
                 const pending = villaTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '');
                 
                 if (pending.length > 0) {
@@ -417,10 +522,11 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 }
             }
             
-            // Question: "Villa X how many times AC complaint?"
+            // Question: "Villa X how many times AC complaint?" or "Flat 511 how many AC complaints?"
             if (villa && system) {
                 const filtered = allTickets.filter(t => 
-                    t.villa.toLowerCase() === villa.toLowerCase() && 
+                    (t.villa.toLowerCase() === villa.toLowerCase() || 
+                     t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')) && 
                     t.system.toLowerCase().includes(system)
                 );
                 
@@ -430,9 +536,12 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 return `🏠 ${villa} - ${system.toUpperCase()} Complaints:\n\n📊 Total: ${filtered.length} complaints\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\n${filtered.length > 0 ? 'Recent issues:\n' + filtered.slice(-3).map(t => `• ${t.date}: ${t.details} (${t.status})`).join('\n') : 'No complaints found.'}`;
             }
             
-            // Question: "Villa X complaints" or "Any issues in Villa X?"
+            // Question: "Villa X complaints" or "Flat 511 all issues" or "Any issues in Flat 224?"
             if (villa) {
-                const filtered = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
+                const filtered = allTickets.filter(t => 
+                    t.villa.toLowerCase() === villa.toLowerCase() || 
+                    t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')
+                );
                 const systemBreakdown = {};
                 const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
                 
@@ -470,7 +579,7 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 }, {})).sort((a, b) => b[1] - a[1]).map(([s, c]) => `• ${s}: ${c}`).join('\n')}`;
             }
             
-            return `I can help you with questions like:\n\n📅 Time-based:\n• "Yesterday how many AC complaints?"\n• "Today's complaints?"\n\n🏠 Villa-specific:\n• "Villa 130 how many AC complaints?"\n• "Any pending in Villa 55?"\n• "Villa 95 all complaints?"\n\n🔧 System analysis:\n• "Which villa has most AC problems?"\n• "Show electrical complaints"\n• "Pending plumbing work?"\n\n💡 Try asking a specific question!`;
+            return `I can help you with questions like:\n\n📅 Time-based:\n• "Yesterday how many AC complaints?"\n• "Today's complaints?"\n\n🏠 Villa/Flat specific:\n• "Villa 130 how many AC complaints?"\n• "Flat 511 any pending?"\n• "Any pending in Flat 224?"\n• "Villa 95 all complaints?"\n\n🔧 System analysis:\n• "Which villa has most AC problems?"\n• "Which flat has most plumbing issues?"\n• "Show electrical complaints"\n• "Pending carpentry work?"\n\n💡 Try asking a specific question!`;
         }
 
         // Handle Enter key in chat
