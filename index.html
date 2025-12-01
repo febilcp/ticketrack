@@ -337,16 +337,23 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 return null;
             }
             
-            // Extract villa number from question
-            const villaMatch = q.match(/villa\s*(\d+)/i) || q.match(/flat\s*(\d+)/i);
-            const villa = villaMatch ? `Villa ${villaMatch[1]}` : null;
+            // Extract villa/flat number from question - improved to match both
+            const villaMatch = q.match(/villa\s*(\d+)/i);
+            const flatMatch = q.match(/flat\s*(\d+)/i);
+            let villa = null;
+            
+            if (villaMatch) {
+                villa = `Villa ${villaMatch[1]}`;
+            } else if (flatMatch) {
+                villa = `Flat ${flatMatch[1]}`;
+            }
             
             // Extract system from question
             const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
             const system = systems.find(s => q.includes(s));
             
             // Question: "Which villa has most AC complaints?" or "Which villa have more time ac complaints?"
-            if ((q.includes('which villa') || q.includes('what villa')) && (q.includes('most') || q.includes('more') || q.includes('many time'))) {
+            if ((q.includes('which villa') || q.includes('what villa') || q.includes('which flat') || q.includes('what flat')) && (q.includes('most') || q.includes('more') || q.includes('many time'))) {
                 let targetSystem = system;
                 if (q.includes('ac')) targetSystem = 'ac';
                 
@@ -361,7 +368,7 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 const top5 = sorted.slice(0, 5);
                 
                 if (top5.length > 0) {
-                    return `📊 Villas with most ${targetSystem || 'complaints'}:\n\n${top5.map((v, i) => `${i + 1}. ${v[0]}: ${v[1]} complaints`).join('\n')}\n\n${top5[0][0]} has the most with ${top5[0][1]} complaints.`;
+                    return `📊 Top locations with most ${targetSystem || 'complaints'}:\n\n${top5.map((v, i) => `${i + 1}. ${v[0]}: ${v[1]} complaints`).join('\n')}\n\n${top5[0][0]} has the most with ${top5[0][1]} complaints.`;
                 }
             }
             
