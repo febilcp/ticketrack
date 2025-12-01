@@ -353,15 +353,23 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
             const system = systems.find(s => q.includes(s));
             
             // Search in complaint details for specific items/issues
-            function searchInDetails(keywords) {
+            function searchInDetails(keywords, exactPhrase = false) {
                 return allTickets.filter(t => {
                     const details = t.details.toLowerCase();
+                    if (exactPhrase) {
+                        // For phrases like "interlock paint", look for the complete phrase
+                        return keywords.some(keyword => details.includes(keyword.toLowerCase()));
+                    }
                     return keywords.some(keyword => details.includes(keyword.toLowerCase()));
                 });
             }
             
             // Check if question is about specific items in details
+            // Order matters - more specific terms first!
             const detailKeywords = {
+                'interlock paint': ['interlock paint', 'interlock need to paint', 'interlock painting'],
+                'interlock': ['interlock'],
+                'door lock': ['door lock', 'door locker'],
                 'washing machine': ['washing machine', 'washer'],
                 'dishwasher': ['dishwasher', 'dish washer'],
                 'fridge': ['fridge', 'refrigerator'],
@@ -375,7 +383,7 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 'door': ['door'],
                 'window': ['window'],
                 'lock': ['lock', 'locker'],
-                'paint': ['paint', 'painting', 'interlock'],
+                'paint': ['paint', 'painting'],
                 'tile': ['tile', 'tiles'],
                 'ceiling': ['ceiling'],
                 'wall': ['wall'],
@@ -388,24 +396,50 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 'noise': ['noise', 'noisy', 'sound'],
                 'smell': ['smell', 'odor', 'odour'],
                 'crack': ['crack', 'cracked'],
-                'damage': ['damage', 'damaged', 'broken']
+                'damage': ['damage', 'damaged', 'broken'],
+                'kitchen': ['kitchen'],
+                'bathroom': ['bathroom'],
+                'bedroom': ['bedroom'],
+                'living room': ['living room', 'living-room'],
+                'balcony': ['balcony']
             };
             
-            // Find if question contains any detail keywords
+            // Find if question contains any detail keywords (check longer phrases first)
             let foundDetailKeyword = null;
             let searchKeywords = [];
+            let isExactPhrase = false;
             
-            for (const [item, keywords] of Object.entries(detailKeywords)) {
-                if (keywords.some(kw => q.includes(kw))) {
-                    foundDetailKeyword = item;
-                    searchKeywords = keywords;
-                    break;
+            // Check for multi-word phrases first
+            if (q.includes('interlock') && (q.includes('paint') || q.includes('painting'))) {
+                foundDetailKeyword = 'interlock paint';
+                searchKeywords = detailKeywords['interlock paint'];
+                isExactPhrase = true;
+            } else if (q.includes('door') && q.includes('lock')) {
+                foundDetailKeyword = 'door lock';
+                searchKeywords = detailKeywords['door lock'];
+                isExactPhrase = true;
+            } else if (q.includes('water') && q.includes('heater')) {
+                foundDetailKeyword = 'water heater';
+                searchKeywords = detailKeywords['water heater'];
+                isExactPhrase = true;
+            } else if (q.includes('washing') && q.includes('machine')) {
+                foundDetailKeyword = 'washing machine';
+                searchKeywords = detailKeywords['washing machine'];
+                isExactPhrase = true;
+            } else {
+                // Check single words
+                for (const [item, keywords] of Object.entries(detailKeywords)) {
+                    if (keywords.some(kw => q.includes(kw))) {
+                        foundDetailKeyword = item;
+                        searchKeywords = keywords;
+                        break;
+                    }
                 }
             }
             
             // Question: Search in details - "How many washing machine complaints?"
             if (foundDetailKeyword) {
-                const filtered = searchInDetails(searchKeywords);
+                const filtered = searchInDetails(searchKeywords, isExactPhrase);
                 
                 if (filtered.length === 0) {
                     return `❌ No complaints found related to "${foundDetailKeyword}".`;
@@ -442,13 +476,13 @@ Full ticket data context: ${allTickets.length} total tickets across all villas a
                 }
                 
                 response += `\n\n🔧 Systems Involved:\n`;
-                response += Object.entries(systemsInvolved).map(([sys, count]) => 
+                response += Object.entries(systemsInvolved).sort((a, b) => b[1] - a[1]).map(([sys, count]) => 
                     `• ${sys}: ${count}`
                 ).join('\n');
                 
                 response += `\n\n📋 Recent Examples:\n`;
-                response += filtered.slice(-3).map(t => 
-                    `• ${t.villa} (${t.date}): ${t.details.substring(0, 60)}${t.details.length > 60 ? '...' : ''}`
+                response += filtered.slice(-5).map(t => 
+                    `• ${t.villa} (${t.date}): ${t.details.substring(0, 80)}${t.details.length > 80 ? '...' : ''}`
                 ).join('\n');
                 
                 return response;
