@@ -85,17 +85,31 @@
             const input = document.getElementById('passwordInput');
             const password = input.value.trim(); // Trim whitespace
             const errorMsg = document.getElementById('errorMsg');
+            const debugInfo = document.getElementById('debugInfo');
             
             console.log('Entered password:', password); // Debug
             console.log('Expected password:', SITE_PASSWORD); // Debug
+            console.log('Password length:', password.length);
+            console.log('Character codes:', password.split('').map(c => c.charCodeAt(0)));
             
             if (password === SITE_PASSWORD) {
                 isAuthenticated = true;
                 sessionStorage.setItem('authenticated', 'true');
+                errorMsg.classList.add('hidden');
+                debugInfo.classList.add('hidden');
                 loadData();
             } else {
                 errorMsg.classList.remove('hidden');
-                input.value = '';
+                debugInfo.classList.remove('hidden');
+                debugInfo.innerHTML = `
+                    <p class="text-xs text-gray-600 mb-1">🔍 Debug Info:</p>
+                    <p class="text-xs text-gray-600">• You typed: "${password}" (${password.length} characters)</p>
+                    <p class="text-xs text-gray-600">• Expected: "${SITE_PASSWORD}" (${SITE_PASSWORD.length} characters)</p>
+                    <p class="text-xs text-gray-600">• Match: ${password === SITE_PASSWORD ? '✅ Yes' : '❌ No'}</p>
+                `;
+                
+                // Don't clear input so user can see what they typed
+                input.select(); // Select all text for easy correction
                 input.focus();
                 
                 // Shake animation
@@ -1009,9 +1023,14 @@
                                     <input
                                         id="passwordInput"
                                         type="password"
-                                        placeholder="Enter password"
+                                        placeholder="Type: villa2025"
                                         onkeypress="handlePasswordKeyPress(event)"
-                                        class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg"
+                                        autocomplete="off"
+                                        autocorrect="off"
+                                        autocapitalize="off"
+                                        spellcheck="false"
+                                        inputmode="text"
+                                        class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg font-mono"
                                         autofocus
                                     />
                                     <button
@@ -1026,7 +1045,17 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-2">💡 Default password: <span class="font-mono bg-gray-100 px-2 py-1 rounded">villa2025</span></p>
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-xs text-green-700 bg-green-50 px-3 py-2 rounded border border-green-200">
+                                        ✅ Password: <span class="font-mono font-bold">villa2025</span> (all lowercase, no spaces)
+                                    </p>
+                                    <p class="text-xs text-blue-600">💡 Click the eye icon 👁️ to see what you're typing</p>
+                                </div>
+                            </div>
+
+                            <!-- Debug Info -->
+                            <div id="debugInfo" class="hidden bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
+                                <!-- Debug info will appear here -->
                             </div>
 
                             <!-- Error Message -->
@@ -1035,7 +1064,7 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    Incorrect password. Please try again.
+                                    Password doesn't match. Check the debug info above.
                                 </p>
                             </div>
 
