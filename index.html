@@ -21,6 +21,10 @@
         const SHEET_ID = '1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4';
         const GID = '931447490';
 
+        // PASSWORD PROTECTION - Change this password
+        const SITE_PASSWORD = 'villa2025';  // CHANGE THIS TO YOUR DESIRED PASSWORD
+        
+        let isAuthenticated = false;
         let allTickets = [];
         let filteredTickets = [];
         let filters = {
@@ -75,8 +79,51 @@
             return tickets;
         }
 
+        // Check password
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const password = input.value;
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (password === SITE_PASSWORD) {
+                isAuthenticated = true;
+                sessionStorage.setItem('authenticated', 'true');
+                loadData();
+            } else {
+                errorMsg.classList.remove('hidden');
+                input.value = '';
+                input.focus();
+                
+                // Shake animation
+                input.classList.add('animate-shake');
+                setTimeout(() => {
+                    input.classList.remove('animate-shake');
+                }, 500);
+            }
+        }
+
+        // Handle Enter key on password input
+        function handlePasswordKeyPress(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        }
+
+        // Logout function
+        function logout() {
+            isAuthenticated = false;
+            sessionStorage.removeItem('authenticated');
+            location.reload();
+        }
+
         // Load data from Google Sheets
         async function loadData() {
+            if (!isAuthenticated) {
+                showLoginScreen();
+                return;
+            }
+            
+            setLoading(true);
             try {
                 console.log('Loading data...');
                 const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
@@ -634,6 +681,12 @@
 
         // Render the page
         function render() {
+            // Check authentication first
+            if (!isAuthenticated) {
+                showLoginScreen();
+                return;
+            }
+            
             const stats = getStats();
             const systems = getUniqueValues('system');
             const systemPending = getSystemPendingStats();
@@ -663,6 +716,12 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                         </svg>
                                         Refresh
+                                    </button>
+                                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2" title="Logout">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Logout
                                     </button>
                                 </div>
                             </div>
@@ -902,8 +961,91 @@
             document.getElementById('app').innerHTML = html;
         }
 
+        // Show login screen
+        function showLoginScreen() {
+            const html = `
+                <div class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-md w-full">
+                        <!-- Logo/Icon -->
+                        <div class="text-center mb-8">
+                            <div class="bg-gradient-to-br from-blue-600 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800">🏢 Villa Maintenance</h1>
+                            <p class="text-gray-600 mt-2">Secure Access Required</p>
+                        </div>
+
+                        <!-- Login Form -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <input
+                                    id="passwordInput"
+                                    type="password"
+                                    placeholder="Enter password"
+                                    onkeypress="handlePasswordKeyPress(event)"
+                                    class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg"
+                                    autofocus
+                                />
+                            </div>
+
+                            <!-- Error Message -->
+                            <div id="errorMsg" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                                <p class="text-sm text-red-700 flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Incorrect password. Please try again.
+                                </p>
+                            </div>
+
+                            <button
+                                onclick="checkPassword()"
+                                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl"
+                            >
+                                🔓 Unlock Dashboard
+                            </button>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
+                            <p class="text-xs text-gray-600 text-center">
+                                🔒 This is a secure system. Access is restricted to authorized personnel only.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    @keyframes shake {
+                        0%, 100% { transform: translateX(0); }
+                        25% { transform: translateX(-10px); }
+                        75% { transform: translateX(10px); }
+                    }
+                    .animate-shake {
+                        animation: shake 0.3s ease-in-out;
+                    }
+                </style>
+            `;
+            
+            document.getElementById('app').innerHTML = html;
+        }
+
+        // Initialize app
+        function initApp() {
+            // Check if already authenticated in this session
+            if (sessionStorage.getItem('authenticated') === 'true') {
+                isAuthenticated = true;
+                loadData();
+            } else {
+                showLoginScreen();
+            }
+        }
+
         // Load data on page load
-        loadData();
+        initApp();
     </script>
 </body>
 </html>
