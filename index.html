@@ -109,13 +109,23 @@
         // Check password
         function checkPassword() {
             const input = document.getElementById('passwordInput');
-            const password = input.value.trim(); // Trim whitespace
+            const password = input.value.trim();
             const errorMsg = document.getElementById('errorMsg');
             const debugInfo = document.getElementById('debugInfo');
+            const unlockBtn = document.getElementById('unlockBtn');
             
-            console.log('Entered password:', password); // Debug
+            // Show loading state
+            unlockBtn.disabled = true;
+            unlockBtn.innerHTML = `
+                <svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            `;
+            
+            console.log('Entered password:', password);
             console.log('Entered password length:', password.length);
-            console.log('Expected password:', SITE_PASSWORD); // Debug
+            console.log('Expected password:', SITE_PASSWORD);
             console.log('Expected password length:', SITE_PASSWORD.length);
             console.log('Are they equal?', password === SITE_PASSWORD);
             console.log('Character by character:');
@@ -123,32 +133,47 @@
                 console.log(`  [${i}] entered: "${password[i]}" (${password.charCodeAt(i)}) | expected: "${SITE_PASSWORD[i]}" (${SITE_PASSWORD.charCodeAt(i)})`);
             }
             
-            if (password === SITE_PASSWORD) {
-                isAuthenticated = true;
-                sessionStorage.setItem('authenticated', 'true');
-                errorMsg.classList.add('hidden');
-                debugInfo.classList.add('hidden');
-                loadData();
-            } else {
-                errorMsg.classList.remove('hidden');
-                debugInfo.classList.remove('hidden');
-                debugInfo.innerHTML = `
-                    <p class="text-xs text-gray-600 mb-1">🔍 Debug Info:</p>
-                    <p class="text-xs text-gray-600">• You typed: "${password}" (${password.length} characters)</p>
-                    <p class="text-xs text-gray-600">• Expected: "${SITE_PASSWORD}" (${SITE_PASSWORD.length} characters)</p>
-                    <p class="text-xs text-gray-600">• Match: ${password === SITE_PASSWORD ? '✅ Yes' : '❌ No'}</p>
-                `;
-                
-                // Don't clear input so user can see what they typed
-                input.select(); // Select all text for easy correction
-                input.focus();
-                
-                // Shake animation
-                input.classList.add('animate-shake');
-                setTimeout(() => {
-                    input.classList.remove('animate-shake');
-                }, 500);
-            }
+            // Use setTimeout to prevent UI freezing
+            setTimeout(() => {
+                if (password === SITE_PASSWORD) {
+                    isAuthenticated = true;
+                    sessionStorage.setItem('authenticated', 'true');
+                    errorMsg.classList.add('hidden');
+                    debugInfo.classList.add('hidden');
+                    
+                    // Show success message
+                    unlockBtn.innerHTML = '✅ Success! Loading...';
+                    unlockBtn.classList.add('bg-green-600');
+                    
+                    // Load data after a short delay
+                    setTimeout(() => {
+                        loadData();
+                    }, 500);
+                } else {
+                    // Reset button
+                    unlockBtn.disabled = false;
+                    unlockBtn.innerHTML = '🔓 Unlock Dashboard';
+                    
+                    errorMsg.classList.remove('hidden');
+                    debugInfo.classList.remove('hidden');
+                    debugInfo.innerHTML = `
+                        <p class="text-xs text-gray-600 mb-1">🔍 Debug Info:</p>
+                        <p class="text-xs text-gray-600">• You typed: "${password}" (${password.length} characters)</p>
+                        <p class="text-xs text-gray-600">• Expected: "${SITE_PASSWORD}" (${SITE_PASSWORD.length} characters)</p>
+                        <p class="text-xs text-gray-600">• Match: ${password === SITE_PASSWORD ? '✅ Yes' : '❌ No'}</p>
+                        <p class="text-xs text-blue-600 mt-2">💡 Try using the Auto-Fill button instead!</p>
+                    `;
+                    
+                    input.select();
+                    input.focus();
+                    
+                    // Shake animation
+                    input.classList.add('animate-shake');
+                    setTimeout(() => {
+                        input.classList.remove('animate-shake');
+                    }, 500);
+                }
+            }, 100);
         }
 
         // Toggle password visibility
