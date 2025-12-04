@@ -17,1177 +17,31 @@
     </div>
 
     <script>
-        // Configuration - PERMANENT GOOGLE SHEET LINK
+        // Configuration
         const SHEET_ID = '1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4';
         const GID = '931447490';
+        const SITE_PASSWORD = 'villa2025';
 
-        // PASSWORD PROTECTION - Change this password
-        const SITE_PASSWORD = 'villa2025';  // CHANGE THIS TO YOUR DESIRED PASSWORD
-        
         let isAuthenticated = false;
-        let showPassword = false;
         let allTickets = [];
         let filteredTickets = [];
-        let filters = {
-            mrfNo: '',
-            villa: '',
-            system: '',
-            status: ''
-        };
+        let filters = { mrfNo: '', villa: '', system: '', status: '' };
         let chatHistory = [];
         let showChat = false;
+        let showPassword = false;
 
-        // Parse CSV
-        function parseCSV(text) {
-            const lines = text.split('\n').filter(line => line.trim());
-            const tickets = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i];
-                const values = [];
-                let current = '';
-                let inQuotes = false;
-                
-                for (let char of line) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        values.push(current.trim().replace(/^"|"$/g, ''));
-                        current = '';
-                    } else {
-                        current += char;
-                    }
-                }
-                values.push(current.trim().replace(/^"|"$/g, ''));
-                
-                if (values[2] && values[2].trim()) {
-                    tickets.push({
-                        date: values[0] || '',
-                        time: values[1] || '',
-                        mrfNo: values[2] || '',
-                        villa: values[3] || '',
-                        system: values[4] || '',
-                        receptionist: values[5] || '',
-                        details: values[6] || '',
-                        intimatedBy: values[7] || '',
-                        actionTaker: values[8] || '',
-                        actionDate: values[9] || '',
-                        status: values[10] || 'Pending'
-                    });
-                }
-            }
-            
-            return tickets;
+        // Check if already authenticated
+        if (sessionStorage.getItem('auth') === 'true') {
+            isAuthenticated = true;
+            loadData();
+        } else {
+            showLogin();
         }
 
-        // Copy password to clipboard
-        function copyPassword() {
-            // Removed for security
-        }
-
-        // Auto-fill password (for testing)
-        function autoFillPassword() {
-            // Removed for security
-        }
-
-        // Bypass login for testing
-        function bypassLogin() {
-            // Removed for security
-        }
-
-        // Check password
-        function checkPassword() {
-            const input = document.getElementById('passwordInput');
-            const password = input.value.trim();
-            const errorMsg = document.getElementById('errorMsg');
-            const debugInfo = document.getElementById('debugInfo');
-            const unlockBtn = document.getElementById('unlockBtn');
-            
-            console.log('Password check starting...');
-            console.log('Entered:', password);
-            console.log('Expected:', SITE_PASSWORD);
-            console.log('Match:', password === SITE_PASSWORD);
-            
-            if (password === SITE_PASSWORD) {
-                console.log('Password correct! Authenticating...');
-                
-                // Update button
-                unlockBtn.disabled = true;
-                unlockBtn.innerHTML = '✅ Loading Dashboard...';
-                
-                // Authenticate
-                isAuthenticated = true;
-                sessionStorage.setItem('authenticated', 'true');
-                
-                // Load data after short delay to allow UI update
-                setTimeout(() => {
-                    console.log('Starting to load data...');
-                    loadData();
-                }, 200);
-                
-            } else {
-                console.log('Password incorrect!');
-                errorMsg.classList.remove('hidden');
-                debugInfo.classList.remove('hidden');
-                debugInfo.innerHTML = `
-                    <p class="text-xs text-red-700 font-semibold">❌ Password does not match</p>
-                    <p class="text-xs text-gray-600 mt-1">Please contact administrator for correct password</p>
-                `;
-                
-                input.value = '';
-                input.focus();
-                
-                // Shake animation
-                input.classList.add('animate-shake');
-                setTimeout(() => {
-                    input.classList.remove('animate-shake');
-                }, 500);
-            }
-        }
-
-        // Toggle password visibility
-        function togglePasswordVisibility() {
-            showPassword = !showPassword;
-            const input = document.getElementById('passwordInput');
-            const eyeIcon = document.getElementById('eyeIcon');
-            
-            input.type = showPassword ? 'text' : 'password';
-            
-            if (showPassword) {
-                eyeIcon.innerHTML = `
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                `;
-            } else {
-                eyeIcon.innerHTML = `
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                `;
-            }
-        }
-
-        // Handle Enter key on password input
-        function handlePasswordKeyPress(event) {
-            if (event.key === 'Enter') {
-                checkPassword();
-            }
-        }
-
-        // Logout function
-        function logout() {
-            isAuthenticated = false;
-            sessionStorage.removeItem('authenticated');
-            location.reload();
-        }
-
-        // Load data from Google Sheets
-        async function loadData() {
-            if (!isAuthenticated) {
-                showLoginScreen();
-                return;
-            }
-            
-            console.log('loadData() called, authenticated:', isAuthenticated);
-            
-            // Show loading screen
+        function showLogin() {
             document.getElementById('app').innerHTML = `
-                <div class="min-h-screen bg-gray-50 flex items-center justify-center">
-                    <div class="text-center">
-                        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-                        <p class="text-xl text-gray-600">Loading dashboard...</p>
-                        <p class="text-sm text-gray-500 mt-2">Please wait...</p>
-                    </div>
-                </div>
-            `;
-            
-            try {
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                console.log('Fetching from:', url);
-                
-                // Add timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-                
-                const response = await fetch(url, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                console.log('Response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                console.log('CSV received, length:', csvText.length);
-                console.log('First 200 chars:', csvText.substring(0, 200));
-                
-                // Parse CSV
-                const lines = csvText.split('\n').filter(line => line.trim());
-                console.log('Total lines:', lines.length);
-                
-                if (lines.length < 2) {
-                    throw new Error('Sheet appears to be empty or has only headers');
-                }
-                
-                const formattedTickets = [];
-                
-                // Skip header row (index 0), start from index 1
-                for (let i = 1; i < lines.length; i++) {
-                    const line = lines[i];
-                    const values = [];
-                    let current = '';
-                    let inQuotes = false;
-                    
-                    for (let char of line) {
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            values.push(current.trim().replace(/^"|"$/g, ''));
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    values.push(current.trim().replace(/^"|"$/g, ''));
-                    
-                    // Only add if we have a MRF number
-                    if (values[2] && values[2].trim()) {
-                        formattedTickets.push({
-                            date: values[0] || '',
-                            time: values[1] || '',
-                            mrfNo: values[2] || '',
-                            villa: values[3] || '',
-                            system: values[4] || '',
-                            receptionist: values[5] || '',
-                            details: values[6] || '',
-                            intimatedBy: values[7] || '',
-                            actionTaker: values[8] || '',
-                            actionDate: values[9] || '',
-                            status: values[10] || 'Pending'
-                        });
-                    }
-                }
-                
-                console.log('Parsed tickets:', formattedTickets.length);
-                
-                if (formattedTickets.length === 0) {
-                    throw new Error('No valid tickets found in the sheet');
-                }
-                
-                allTickets = formattedTickets;
-                applyFilters();
-                render();
-                
-            } catch (err) {
-                console.error('Error loading data:', err);
-                
-                // Show error screen with option to retry or use demo
-                document.getElementById('app').innerHTML = `
-                    <div class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-                        <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
-                            <div class="text-center mb-6">
-                                <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <h2 class="text-2xl font-bold text-gray-800 mb-2">Connection Error</h2>
-                                <p class="text-gray-600">${err.message}</p>
-                            </div>
-                            
-                            <div class="space-y-3">
-                                <button
-                                    onclick="loadData()"
-                                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-                                >
-                                    🔄 Try Again
-                                </button>
-                                
-                                <button
-                                    onclick="loadDemoData()"
-                                    class="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700"
-                                >
-                                    📊 Load Demo Data (Testing)
-                                </button>
-                                
-                                <button
-                                    onclick="logout()"
-                                    class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700"
-                                >
-                                    🚪 Logout
-                                </button>
-                            </div>
-                            
-                            <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <p class="text-xs text-yellow-800">
-                                    <strong>Possible issues:</strong><br>
-                                    • Google Sheet not shared publicly<br>
-                                    • Network connection problem<br>
-                                    • Sheet ID or GID incorrect<br>
-                                    • Timeout (data too large)
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Load demo data for testing
-        function loadDemoData() {
-            console.log('Loading demo data...');
-            allTickets = [
-                { date: '1-january-2025', time: '9:41 AM', mrfNo: '25/33047', villa: 'Ballroom', system: 'Carpentry', receptionist: 'Karishma', details: 'Wall tiles to fixed', intimatedBy: 'Mr siva', actionTaker: 'Joel/Linggam/Collins', actionDate: '8-Jan-2025', status: 'Completed' },
-                { date: '1-january-2025', time: '11:30 AM', mrfNo: '25/33049', villa: 'Flat 511', system: 'Carpentry', receptionist: 'Karishma', details: 'Kids room bed noisy', intimatedBy: 'Tenant', actionTaker: 'Joel/Linggam/Collins', actionDate: '2-Jan-2025', status: 'Completed' },
-                { date: '1-january-2025', time: '11:24 AM', mrfNo: '25/33048', villa: 'Building 1', system: 'Electrical', receptionist: 'Karishma', details: 'Glassdoor entrance light', intimatedBy: 'Mr Siva', actionTaker: 'Loshan /Liton(Riviera)', actionDate: '2-Jan-2025', status: 'Completed' },
-                { date: '2-january-2025', time: '9:30 AM', mrfNo: '25/33050', villa: 'Villa 130', system: 'AC', receptionist: 'Maria', details: 'AC not cooling', intimatedBy: 'Tenant', actionTaker: 'ACC', actionDate: '', status: 'Pending' },
-                { date: '2-january-2025', time: '10:15 AM', mrfNo: '25/33051', villa: 'Villa 95', system: 'Plumbing', receptionist: 'Vergie', details: 'Kitchen sink clogged', intimatedBy: 'Owner', actionTaker: 'AMeer/Golam', actionDate: '', status: 'In Progress' },
-            ];
-            applyFilters();
-            render();
-        }
-            try {
-                console.log('Loading data...');
-                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
-                const response = await fetch(url);
-                const text = await response.text();
-                
-                console.log('Data loaded, parsing...');
-                allTickets = parseCSV(text);
-                console.log('Tickets found:', allTickets.length);
-                
-                applyFilters();
-                render();
-            } catch (error) {
-                console.error('Error loading data:', error);
-                document.getElementById('app').innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center p-6">
-                        <div class="bg-red-50 border-l-4 border-red-500 p-6 max-w-2xl">
-                            <h2 class="text-xl font-bold text-red-800 mb-2">Error Loading Data</h2>
-                            <p class="text-red-700 mb-4">${error.message}</p>
-                            <div class="text-sm text-red-600">
-                                <p class="font-semibold mb-2">Please check:</p>
-                                <ol class="list-decimal ml-5 space-y-1">
-                                    <li>Your Google Sheet is shared as "Anyone with the link can view"</li>
-                                    <li>The sheet ID is correct: ${SHEET_ID}</li>
-                                    <li>The GID (tab ID) is correct: ${GID}</li>
-                                </ol>
-                            </div>
-                            <button onclick="loadData()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
-                                Try Again
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Apply filters
-        function applyFilters() {
-            filteredTickets = allTickets.filter(ticket => {
-                // Exact match for villa if filter is set, otherwise show all
-                const villaMatch = !filters.villa || ticket.villa.toLowerCase() === filters.villa.toLowerCase();
-                
-                return (
-                    villaMatch &&
-                    (!filters.mrfNo || ticket.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
-                    (!filters.system || ticket.system.toLowerCase().includes(filters.system.toLowerCase())) &&
-                    (!filters.status || ticket.status.toLowerCase().includes(filters.status.toLowerCase()))
-                );
-            });
-        }
-
-        // Update filter
-        function updateFilter(key, value) {
-            filters[key] = value;
-            applyFilters();
-            render();
-        }
-
-        // Clear all filters and return to dashboard
-        function resetDashboard() {
-            filters = {
-                mrfNo: '',
-                villa: '',
-                system: '',
-                status: ''
-            };
-            applyFilters();
-            render();
-        }
-
-        // Toggle chat window
-        function toggleChat() {
-            showChat = !showChat;
-            render();
-        }
-
-        // Send chat message
-        async function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const question = input.value.trim();
-            
-            if (!question) return;
-            
-            // Add user message to chat
-            chatHistory.push({ role: 'user', content: question });
-            input.value = '';
-            render();
-            
-            // Show typing indicator
-            chatHistory.push({ role: 'assistant', content: '⏳ Analyzing your question...' });
-            render();
-            
-            try {
-                // Use smart answer system
-                const answer = getSmartAnswer(question);
-                
-                // Remove typing indicator
-                chatHistory.pop();
-                chatHistory.push({ role: 'assistant', content: answer });
-                
-            } catch (error) {
-                console.error('Chat error:', error);
-                chatHistory.pop();
-                chatHistory.push({ role: 'assistant', content: 'Sorry, I encountered an error. Please try rephrasing your question.' });
-            }
-            
-            render();
-            
-            // Auto-scroll to bottom
-            setTimeout(() => {
-                const chatBox = document.querySelector('.overflow-y-auto');
-                if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
-            }, 100);
-        }
-        
-        // Smart answer system - improved logic
-        function getSmartAnswer(question) {
-            const q = question.toLowerCase();
-            
-            // Try rule-based answer first
-            const answer = getSimpleAnswer(q);
-            
-            // If answer is the default help text, try to be more helpful
-            if (answer.includes('I can help you with questions like')) {
-                return `🤔 I'm not sure I understood that question correctly.\n\nLet me help you rephrase it. Are you asking about:\n\n📊 Statistics? Try:\n• "How many complaints in total?"\n• "Yesterday's complaints?"\n\n🏠 Specific location? Try:\n• "Villa 130 issues?"\n• "Flat 511 pending?"\n\n🔍 Specific item? Try:\n• "Washing machine complaints?"\n• "Door lock problems?"\n\n💡 Or just ask naturally! For example:\n• "Which villa has most problems?"\n• "Show me AC issues"\n• "Any pending work?"`;
-            }
-            
-            return answer;
-        }
-
-        // Simple rule-based fallback answers
-        function getSimpleAnswer(question) {
-            const q = question.toLowerCase().trim();
-            
-            // Handle common variations and typos
-            const normalizedQ = q
-                .replace(/villa no\.?/gi, 'villa')
-                .replace(/flat no\.?/gi, 'flat')
-                .replace(/\s+/g, ' ')
-                .replace(/how many times?/gi, 'how many')
-                .replace(/how much/gi, 'how many')
-                .replace(/tell me about/gi, '')
-                .replace(/show me/gi, '')
-                .replace(/list/gi, '');
-            
-            // Parse dates - check for yesterday, today, last week, etc.
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-            
-            function parseTicketDate(dateStr) {
-                // Handle formats like "29-November-2025" or "6-July-2025"
-                const parts = dateStr.split('-');
-                if (parts.length === 3) {
-                    const months = {
-                        'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
-                        'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
-                    };
-                    const day = parseInt(parts[0]);
-                    const month = months[parts[1].toLowerCase()];
-                    const year = parseInt(parts[2]);
-                    return new Date(year, month, day);
-                }
-                return null;
-            }
-            
-            // Extract villa/flat number from question - improved to match both
-            const villaMatch = normalizedQ.match(/villa\s*(\d+)/i);
-            const flatMatch = normalizedQ.match(/flat\s*(\d+)/i);
-            let villa = null;
-            
-            if (villaMatch) {
-                villa = `Villa ${villaMatch[1]}`;
-            } else if (flatMatch) {
-                villa = `Flat ${flatMatch[1]}`;
-            }
-            
-            // Extract system from question
-            const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
-            const system = systems.find(s => normalizedQ.includes(s));
-            
-            // Search in complaint details for specific items/issues
-            function searchInDetails(keywords, exactPhrase = false) {
-                return allTickets.filter(t => {
-                    const details = t.details.toLowerCase();
-                    if (exactPhrase) {
-                        // For phrases like "interlock paint", look for the complete phrase
-                        return keywords.some(keyword => details.includes(keyword.toLowerCase()));
-                    }
-                    return keywords.some(keyword => details.includes(keyword.toLowerCase()));
-                });
-            }
-            
-            // Check if question is about specific items in details
-            // Order matters - more specific terms first!
-            const detailKeywords = {
-                'interlock paint': ['interlock paint', 'interlock need to paint', 'interlock painting'],
-                'interlock': ['interlock'],
-                'door lock': ['door lock', 'door locker'],
-                'washing machine': ['washing machine', 'washer'],
-                'dishwasher': ['dishwasher', 'dish washer'],
-                'fridge': ['fridge', 'refrigerator'],
-                'microwave': ['microwave', 'micro wave'],
-                'oven': ['oven'],
-                'water heater': ['water heater', 'heater', 'geyser'],
-                'sink': ['sink', 'basin'],
-                'toilet': ['toilet', 'wc', 'commode'],
-                'shower': ['shower'],
-                'tap': ['tap', 'faucet'],
-                'door': ['door'],
-                'window': ['window'],
-                'lock': ['lock', 'locker'],
-                'paint': ['paint', 'painting'],
-                'tile': ['tile', 'tiles'],
-                'ceiling': ['ceiling'],
-                'wall': ['wall'],
-                'floor': ['floor'],
-                'light': ['light', 'bulb', 'lamp'],
-                'fan': ['fan'],
-                'switch': ['switch', 'socket'],
-                'drain': ['drain', 'drainage', 'clogged', 'blocked'],
-                'leak': ['leak', 'leaking', 'leakage'],
-                'noise': ['noise', 'noisy', 'sound'],
-                'smell': ['smell', 'odor', 'odour'],
-                'crack': ['crack', 'cracked'],
-                'damage': ['damage', 'damaged', 'broken'],
-                'kitchen': ['kitchen'],
-                'bathroom': ['bathroom'],
-                'bedroom': ['bedroom'],
-                'living room': ['living room', 'living-room'],
-                'balcony': ['balcony']
-            };
-            
-            // Find if question contains any detail keywords (check longer phrases first)
-            let foundDetailKeyword = null;
-            let searchKeywords = [];
-            let isExactPhrase = false;
-            
-            // Check for multi-word phrases first
-            if (q.includes('interlock') && (q.includes('paint') || q.includes('painting'))) {
-                foundDetailKeyword = 'interlock paint';
-                searchKeywords = detailKeywords['interlock paint'];
-                isExactPhrase = true;
-            } else if (q.includes('door') && q.includes('lock')) {
-                foundDetailKeyword = 'door lock';
-                searchKeywords = detailKeywords['door lock'];
-                isExactPhrase = true;
-            } else if (q.includes('water') && q.includes('heater')) {
-                foundDetailKeyword = 'water heater';
-                searchKeywords = detailKeywords['water heater'];
-                isExactPhrase = true;
-            } else if (q.includes('washing') && q.includes('machine')) {
-                foundDetailKeyword = 'washing machine';
-                searchKeywords = detailKeywords['washing machine'];
-                isExactPhrase = true;
-            } else {
-                // Check single words
-                for (const [item, keywords] of Object.entries(detailKeywords)) {
-                    if (keywords.some(kw => q.includes(kw))) {
-                        foundDetailKeyword = item;
-                        searchKeywords = keywords;
-                        break;
-                    }
-                }
-            }
-            
-            // Question: Search in details - "How many washing machine complaints?"
-            if (foundDetailKeyword) {
-                const filtered = searchInDetails(searchKeywords, isExactPhrase);
-                
-                if (filtered.length === 0) {
-                    return `❌ No complaints found related to "${foundDetailKeyword}".`;
-                }
-                
-                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
-                
-                // Get villas/flats with this issue
-                const locations = {};
-                filtered.forEach(t => {
-                    locations[t.villa] = (locations[t.villa] || 0) + 1;
-                });
-                const sortedLocations = Object.entries(locations).sort((a, b) => b[1] - a[1]);
-                
-                // Get systems involved
-                const systemsInvolved = {};
-                filtered.forEach(t => {
-                    systemsInvolved[t.system] = (systemsInvolved[t.system] || 0) + 1;
-                });
-                
-                let response = `🔍 Search Results for "${foundDetailKeyword.toUpperCase()}":\n\n`;
-                response += `📊 Total Complaints: ${filtered.length}\n`;
-                response += `✅ Completed: ${completed}\n`;
-                response += `⏳ Pending: ${pending}\n\n`;
-                
-                response += `🏠 Affected Locations (${sortedLocations.length}):\n`;
-                response += sortedLocations.slice(0, 10).map(([loc, count], i) => 
-                    `${i + 1}. ${loc}: ${count} complaint${count > 1 ? 's' : ''}`
-                ).join('\n');
-                
-                if (sortedLocations.length > 10) {
-                    response += `\n...and ${sortedLocations.length - 10} more locations`;
-                }
-                
-                response += `\n\n🔧 Systems Involved:\n`;
-                response += Object.entries(systemsInvolved).sort((a, b) => b[1] - a[1]).map(([sys, count]) => 
-                    `• ${sys}: ${count}`
-                ).join('\n');
-                
-                response += `\n\n📋 Recent Examples:\n`;
-                response += filtered.slice(-5).map(t => 
-                    `• ${t.villa} (${t.date}): ${t.details.substring(0, 80)}${t.details.length > 80 ? '...' : ''}`
-                ).join('\n');
-                
-                return response;
-            }
-            
-            // Question: "Top 5 villas with most complaints"
-            if ((normalizedQ.includes('top') || normalizedQ.includes('most complaints') || normalizedQ.includes('worst')) && 
-                (normalizedQ.includes('villa') || normalizedQ.includes('location'))) {
-                const villaCounts = {};
-                allTickets.forEach(t => {
-                    villaCounts[t.villa] = (villaCounts[t.villa] || 0) + 1;
-                });
-                
-                const sorted = Object.entries(villaCounts).sort((a, b) => b[1] - a[1]);
-                const top10 = sorted.slice(0, 10);
-                
-                return `🏆 Top Locations with Most Complaints:\n\n${top10.map((v, i) => `${i + 1}. ${v[0]}: ${v[1]} complaints`).join('\n')}\n\n💡 Ask about a specific villa for details!`;
-            }
-            
-            // Question: "Who is the busiest technician?" or "Most complaints per technician"
-            if (normalizedQ.includes('technician') || normalizedQ.includes('action taker') || normalizedQ.includes('assigned')) {
-                const techCounts = {};
-                allTickets.forEach(t => {
-                    if (t.actionTaker) {
-                        techCounts[t.actionTaker] = (techCounts[t.actionTaker] || 0) + 1;
-                    }
-                });
-                
-                const sorted = Object.entries(techCounts).sort((a, b) => b[1] - a[1]);
-                
-                return `👷 Technician Workload:\n\n${sorted.map(([tech, count], i) => `${i + 1}. ${tech}: ${count} tasks`).join('\n')}\n\nTotal technicians: ${sorted.length}`;
-            }
-            
-            // Question: "Compare Villa X and Villa Y"
-            if (normalizedQ.includes('compare') && normalizedQ.includes('villa')) {
-                const villaMatches = normalizedQ.match(/villa\s*(\d+)/gi);
-                if (villaMatches && villaMatches.length >= 2) {
-                    const villa1 = villaMatches[0].replace(/villa\s*/i, 'Villa ');
-                    const villa2 = villaMatches[1].replace(/villa\s*/i, 'Villa ');
-                    
-                    const v1Tickets = allTickets.filter(t => t.villa.toLowerCase() === villa1.toLowerCase());
-                    const v2Tickets = allTickets.filter(t => t.villa.toLowerCase() === villa2.toLowerCase());
-                    
-                    return `⚖️ Comparison: ${villa1} vs ${villa2}\n\n${villa1}:\n• Total: ${v1Tickets.length}\n• Pending: ${v1Tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length}\n\n${villa2}:\n• Total: ${v2Tickets.length}\n• Pending: ${v2Tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length}`;
-                }
-            }
-            
-            // Question: "Which villa has most AC complaints?" or "Which villa have more time ac complaints?"
-            if ((q.includes('which villa') || q.includes('what villa') || q.includes('which flat') || q.includes('what flat')) && (q.includes('most') || q.includes('more') || q.includes('many time'))) {
-                let targetSystem = system;
-                if (q.includes('ac')) targetSystem = 'ac';
-                
-                const villaCounts = {};
-                allTickets.forEach(t => {
-                    if (!targetSystem || t.system.toLowerCase().includes(targetSystem)) {
-                        villaCounts[t.villa] = (villaCounts[t.villa] || 0) + 1;
-                    }
-                });
-                
-                const sorted = Object.entries(villaCounts).sort((a, b) => b[1] - a[1]);
-                const top5 = sorted.slice(0, 5);
-                
-                if (top5.length > 0) {
-                    return `📊 Top locations with most ${targetSystem || 'complaints'}:\n\n${top5.map((v, i) => `${i + 1}. ${v[0]}: ${v[1]} complaints`).join('\n')}\n\n${top5[0][0]} has the most with ${top5[0][1]} complaints.`;
-                }
-            }
-            
-            // Question: "Yesterday how many complaints for AC?"
-            if (q.includes('yesterday')) {
-                const yesterdayStr = yesterday.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/ /g, '-');
-                const yesterdayTickets = allTickets.filter(t => {
-                    const ticketDate = parseTicketDate(t.date);
-                    return ticketDate && ticketDate.toDateString() === yesterday.toDateString();
-                });
-                
-                if (system) {
-                    const filtered = yesterdayTickets.filter(t => t.system.toLowerCase().includes(system));
-                    return `📅 Yesterday (${yesterdayStr}), there ${filtered.length === 1 ? 'was' : 'were'} ${filtered.length} ${system.toUpperCase()} complaint${filtered.length !== 1 ? 's' : ''}.\n\n${filtered.length > 0 ? 'Details:\n' + filtered.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
-                }
-                return `📅 Yesterday (${yesterdayStr}), there were ${yesterdayTickets.length} total complaints.`;
-            }
-            
-            // Question: "Today how many complaints?"
-            if (q.includes('today')) {
-                const todayTickets = allTickets.filter(t => {
-                    const ticketDate = parseTicketDate(t.date);
-                    return ticketDate && ticketDate.toDateString() === today.toDateString();
-                });
-                
-                if (system) {
-                    const filtered = todayTickets.filter(t => t.system.toLowerCase().includes(system));
-                    return `📅 Today, there ${filtered.length === 1 ? 'is' : 'are'} ${filtered.length} ${system.toUpperCase()} complaint${filtered.length !== 1 ? 's' : ''}.\n\n${filtered.length > 0 ? 'Details:\n' + filtered.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
-                }
-                return `📅 Today, there are ${todayTickets.length} total complaints.`;
-            }
-            
-            // Question: "Any pending in Villa 55?" or "Any pending in Flat 511?"
-            if (villa && (q.includes('pending') || q.includes('open'))) {
-                const villaTickets = allTickets.filter(t => 
-                    t.villa.toLowerCase() === villa.toLowerCase() || 
-                    t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')
-                );
-                const pending = villaTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '');
-                
-                if (pending.length > 0) {
-                    const systemBreakdown = {};
-                    pending.forEach(t => {
-                        systemBreakdown[t.system] = (systemBreakdown[t.system] || 0) + 1;
-                    });
-                    return `⚠️ ${villa} has ${pending.length} pending complaint${pending.length !== 1 ? 's' : ''}:\n\n${Object.entries(systemBreakdown).map(([s, c]) => `• ${s}: ${c}`).join('\n')}\n\nRecent issues:\n${pending.slice(-3).map(t => `• ${t.system}: ${t.details} (MRF: ${t.mrfNo})`).join('\n')}`;
-                } else {
-                    return `✅ Great news! ${villa} has no pending complaints. All issues are resolved.`;
-                }
-            }
-            
-            // Question: "Villa X how many times AC complaint?" or "Flat 511 how many AC complaints?"
-            if (villa && system) {
-                const filtered = allTickets.filter(t => 
-                    (t.villa.toLowerCase() === villa.toLowerCase() || 
-                     t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')) && 
-                    t.system.toLowerCase().includes(system)
-                );
-                
-                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
-                
-                return `🏠 ${villa} - ${system.toUpperCase()} Complaints:\n\n📊 Total: ${filtered.length} complaints\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\n${filtered.length > 0 ? 'Recent issues:\n' + filtered.slice(-3).map(t => `• ${t.date}: ${t.details} (${t.status})`).join('\n') : 'No complaints found.'}`;
-            }
-            
-            // Question: "Villa X complaints" or "Flat 511 all issues" or "Any issues in Flat 224?"
-            if (villa) {
-                const filtered = allTickets.filter(t => 
-                    t.villa.toLowerCase() === villa.toLowerCase() || 
-                    t.villa.toLowerCase().replace(/\s+/g, '') === villa.toLowerCase().replace(/\s+/g, '')
-                );
-                const systemBreakdown = {};
-                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
-                
-                filtered.forEach(t => {
-                    systemBreakdown[t.system] = (systemBreakdown[t.system] || 0) + 1;
-                });
-                
-                return `🏠 ${villa} Summary:\n\n📊 Total complaints: ${filtered.length}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(systemBreakdown).map(([s, c]) => `• ${s}: ${c}`).join('\n')}\n\n${pending.length > 0 ? '\nPending Issues:\n' + pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n') : ''}`;
-            }
-            
-            // Question: "AC complaints" or "Show me electrical issues"
-            if (system) {
-                const filtered = allTickets.filter(t => t.system.toLowerCase().includes(system));
-                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
-                
-                // Get top villas with this issue
-                const villaCounts = {};
-                filtered.forEach(t => {
-                    villaCounts[t.villa] = (villaCounts[t.villa] || 0) + 1;
-                });
-                const topVillas = Object.entries(villaCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                
-                return `🔧 ${system.toUpperCase()} System Report:\n\n📊 Total: ${filtered.length} complaints\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\nTop Affected Villas:\n${topVillas.map(([v, c], i) => `${i + 1}. ${v}: ${c} complaints`).join('\n')}\n\n${pending > 0 ? `Recent pending:\n${filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).slice(-3).map(t => `• ${t.villa}: ${t.details}`).join('\n')}` : ''}`;
-            }
-            
-            // General stats
-            if (q.includes('total') || q.includes('how many complaint')) {
-                const pending = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                const completed = allTickets.filter(t => t.status.toLowerCase().includes('completed')).length;
-                
-                return `📊 Overall Statistics:\n\n🎫 Total tickets: ${allTickets.length}\n⏳ Pending: ${pending}\n✅ Completed: ${completed}\n\nBy System:\n${Object.entries(allTickets.reduce((acc, t) => {
-                    acc[t.system] = (acc[t.system] || 0) + 1;
-                    return acc;
-                }, {})).sort((a, b) => b[1] - a[1]).map(([s, c]) => `• ${s}: ${c}`).join('\n')}`;
-            }
-            
-            return `I can help you with questions like:\n\n📅 Time-based:\n• "Yesterday how many AC complaints?"\n• "Today's complaints?"\n\n🏠 Villa/Flat specific:\n• "Villa 130 how many AC complaints?"\n• "Flat 511 any pending?"\n• "Any pending in Flat 224?"\n• "Villa 95 all complaints?"\n\n🔧 System analysis:\n• "Which villa has most AC problems?"\n• "Which flat has most plumbing issues?"\n• "Show electrical complaints"\n• "Pending carpentry work?"\n\n💡 Try asking a specific question!`;
-        }
-
-        // Handle Enter key in chat
-        function handleChatKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendChatMessage();
-            }
-        }
-
-        // Export to CSV
-        function exportCSV() {
-            const headers = ['Date', 'Time', 'MRF No', 'Villa', 'System', 'Receptionist', 'Details', 'Intimated By', 'Action Taker', 'Action Date', 'Status'];
-            const rows = filteredTickets.map(t => [
-                t.date, t.time, t.mrfNo, t.villa, t.system, t.receptionist,
-                `"${t.details}"`, t.intimatedBy, t.actionTaker, t.actionDate, t.status
-            ]);
-            
-            const csv = [headers, ...rows].map(row => row.join(',\t')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `maintenance_report_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-        }
-
-        // Get statistics
-        function getStats() {
-            const completed = filteredTickets.filter(t => t.status.toLowerCase().includes('completed')).length;
-            const pending = filteredTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '').length;
-            const inProgress = filteredTickets.length - completed - pending;
-            
-            return { total: filteredTickets.length, completed, pending, inProgress };
-        }
-
-        // Get system-wise pending counts
-        function getSystemPendingStats() {
-            const pendingTickets = allTickets.filter(t => 
-                !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === ''
-            );
-            
-            const systemStats = {};
-            pendingTickets.forEach(ticket => {
-                const system = ticket.system || 'Other';
-                systemStats[system] = (systemStats[system] || 0) + 1;
-            });
-            
-            // Define system colors and icons
-            const systemConfig = {
-                'AC': { color: 'blue', icon: '❄️', label: 'AC' },
-                'Electrical': { color: 'yellow', icon: '⚡', label: 'Electrical' },
-                'Plumbing': { color: 'cyan', icon: '🚰', label: 'Plumbing' },
-                'Carpentry': { color: 'amber', icon: '🔨', label: 'Carpentry' },
-                'Painting': { color: 'purple', icon: '🎨', label: 'Painting' },
-                'Mason': { color: 'gray', icon: '🧱', label: 'Mason' }
-            };
-            
-            return Object.keys(systemConfig).map(system => ({
-                system: system,
-                count: systemStats[system] || 0,
-                ...systemConfig[system]
-            }));
-        }
-
-        // Get unique values for dropdowns
-        function getUniqueValues(field) {
-            const values = [...new Set(allTickets.map(t => t[field]).filter(v => v))];
-            return values.sort();
-        }
-
-        // Render the page
-        function render() {
-            // Check authentication first
-            if (!isAuthenticated) {
-                showLoginScreen();
-                return;
-            }
-            
-            const stats = getStats();
-            const systems = getUniqueValues('system');
-            const systemPending = getSystemPendingStats();
-            
-            // Get only the most recent 25 tickets (REVERSE because newest is at bottom of sheet)
-            const recentTickets = [...filteredTickets].reverse().slice(0, 25);
-            
-            const html = `
-                <div class="min-h-screen p-4 md:p-6">
-                    <div class="max-w-7xl mx-auto">
-                        <!-- Header -->
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                                <div>
-                                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🏢 Villa Maintenance Dashboard</h1>
-                                    <p class="text-gray-600 mt-1">Track and manage maintenance requests - 2025</p>
-                                </div>
-                                <div class="flex gap-3">
-                                    <button onclick="resetDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                                        </svg>
-                                        Back to Dashboard
-                                    </button>
-                                    <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                        </svg>
-                                        Refresh
-                                    </button>
-                                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2" title="Logout">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                                        </svg>
-                                        Logout
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Stats -->
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div class="bg-blue-50 rounded-lg p-4">
-                                    <p class="text-blue-600 text-sm font-medium">Total Tickets</p>
-                                    <p class="text-3xl font-bold text-blue-900">${stats.total}</p>
-                                </div>
-                                <div class="bg-yellow-50 rounded-lg p-4">
-                                    <p class="text-yellow-600 text-sm font-medium">Pending</p>
-                                    <p class="text-3xl font-bold text-yellow-900">${stats.pending}</p>
-                                </div>
-                                <div class="bg-green-50 rounded-lg p-4">
-                                    <p class="text-green-600 text-sm font-medium">Completed</p>
-                                    <p class="text-3xl font-bold text-green-900">${stats.completed}</p>
-                                </div>
-                                <div class="bg-purple-50 rounded-lg p-4">
-                                    <p class="text-purple-600 text-sm font-medium">In Progress</p>
-                                    <p class="text-3xl font-bold text-purple-900">${stats.inProgress}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- System-wise Pending Summary -->
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">⚙️ Pending Work by System</h2>
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                ${systemPending.map(sys => `
-                                    <div class="bg-gradient-to-br from-${sys.color}-50 to-${sys.color}-100 rounded-lg p-4 border-l-4 border-${sys.color}-500 hover:shadow-md transition-shadow cursor-pointer" 
-                                         onclick="updateFilter('system', '${sys.system}'); updateFilter('status', 'pending');">
-                                        <div class="flex items-center justify-between mb-2">
-                                            <span class="text-2xl">${sys.icon}</span>
-                                            <span class="text-xs font-semibold text-${sys.color}-600 bg-white px-2 py-1 rounded">PENDING</span>
-                                        </div>
-                                        <p class="text-${sys.color}-800 font-semibold text-sm mb-1">${sys.label}</p>
-                                        <p class="text-3xl font-bold text-${sys.color}-900">${sys.count}</p>
-                                        <p class="text-xs text-${sys.color}-600 mt-1">Click to filter</p>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                                <p class="text-sm text-gray-600">
-                                    <strong>Total Pending:</strong> ${systemPending.reduce((sum, sys) => sum + sys.count, 0)} tickets across all systems
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Filters -->
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <h2 class="text-xl font-semibold text-gray-800 mb-4">🔍 Search & Filter</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <input
-                                    type="text"
-                                    placeholder="Search MRF No (e.g., 25/33047)"
-                                    value="${filters.mrfNo}"
-                                    onchange="updateFilter('mrfNo', this.value)"
-                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Search Villa/Flat"
-                                    value="${filters.villa}"
-                                    onchange="updateFilter('villa', this.value)"
-                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                />
-                                <select
-                                    onchange="updateFilter('system', this.value)"
-                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                >
-                                    <option value="">All Systems</option>
-                                    ${systems.map(s => `<option value="${s}" ${filters.system === s ? 'selected' : ''}>${s}</option>`).join('')}
-                                </select>
-                                <select
-                                    onchange="updateFilter('status', this.value)"
-                                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                >
-                                    <option value="">All Status</option>
-                                    <option value="completed" ${filters.status === 'completed' ? 'selected' : ''}>Completed</option>
-                                    <option value="pending" ${filters.status === 'pending' ? 'selected' : ''}>Pending</option>
-                                    <option value="progress" ${filters.status === 'progress' ? 'selected' : ''}>In Progress</option>
-                                </select>
-                            </div>
-                            <button onclick="exportCSV()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                </svg>
-                                Export to CSV
-                            </button>
-                        </div>
-
-                        <!-- Table -->
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-semibold text-gray-800">📋 Recent Maintenance Tickets</h2>
-                                <span class="text-sm text-gray-600">Showing latest 25 of ${filteredTickets.length} tickets</span>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full min-w-max">
-                                    <thead>
-                                        <tr class="border-b-2 border-gray-200">
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Time</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">MRF No</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Villa/Flat</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">System</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Details</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Intimated By</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Action Taker</th>
-                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${recentTickets.length === 0 ? `
-                                            <tr>
-                                                <td colspan="9" class="text-center py-8 text-gray-500">
-                                                    No tickets found. Try adjusting your filters.
-                                                </td>
-                                            </tr>
-                                        ` : recentTickets.map(ticket => `
-                                            <tr class="border-b border-gray-100 hover:bg-gray-50">
-                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.date}</td>
-                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.time}</td>
-                                                <td class="py-3 px-4 font-medium text-blue-600">${ticket.mrfNo}</td>
-                                                <td class="py-3 px-4 text-gray-700">${ticket.villa}</td>
-                                                <td class="py-3 px-4">
-                                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">
-                                                        ${ticket.system}
-                                                    </span>
-                                                </td>
-                                                <td class="py-3 px-4 text-gray-700 max-w-xs truncate" title="${ticket.details}">
-                                                    ${ticket.details}
-                                                </td>
-                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.intimatedBy || '-'}</td>
-                                                <td class="py-3 px-4 text-sm text-gray-700">${ticket.actionTaker || '-'}</td>
-                                                <td class="py-3 px-4">
-                                                    <span class="px-2 py-1 rounded text-sm font-medium whitespace-nowrap ${
-                                                        ticket.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
-                                                        ticket.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                                    }">
-                                                        ${ticket.status || 'Pending'}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Chat Bot -->
-                <div class="fixed bottom-6 right-6 z-50">
-                    ${showChat ? `
-                        <div class="bg-white rounded-lg shadow-2xl w-96 h-[500px] flex flex-col">
-                            <!-- Chat Header -->
-                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between items-center">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                                    </svg>
-                                    <div>
-                                        <h3 class="font-semibold">AI Assistant</h3>
-                                        <p class="text-xs opacity-90">Ask about maintenance data</p>
-                                    </div>
-                                </div>
-                                <button onclick="toggleChat()" class="hover:bg-white/20 rounded p-1">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <!-- Chat Messages -->
-                            <div class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                                ${chatHistory.length === 0 ? `
-                                    <div class="text-center text-gray-500 mt-8">
-                                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                        </svg>
-                                        <p class="text-sm mb-2">👋 Hi! I'm your AI assistant</p>
-                                        <p class="text-xs">Ask me about:</p>
-                                        <ul class="text-xs mt-2 space-y-1">
-                                            <li>• Villa complaints</li>
-                                            <li>• System statistics</li>
-                                            <li>• Pending issues</li>
-                                        </ul>
-                                    </div>
-                                ` : chatHistory.map((msg, idx) => `
-                                    <div class="flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-                                        <div class="${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white text-gray-800'} rounded-lg p-3 max-w-[80%] shadow">
-                                            <p class="text-sm whitespace-pre-wrap">${msg.content}</p>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-
-                            <!-- Chat Input -->
-                            <div class="p-4 border-t bg-white rounded-b-lg">
-                                <div class="flex gap-2">
-                                    <input
-                                        id="chatInput"
-                                        type="text"
-                                        placeholder="Type your question here..."
-                                        onkeypress="handleChatKeyPress(event)"
-                                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                                    />
-                                    <button
-                                        onclick="sendChatMessage()"
-                                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1"
-                                        title="Send message"
-                                    >
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-2">💡 Try: "How many AC complaints for Villa 130?"</p>
-                            </div>
-                        </div>
-                    ` : `
-                        <button
-                            onclick="toggleChat()"
-                            class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-110"
-                        >
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                        </button>
-                    `}
-                </div>
-            `;
-            
-            document.getElementById('app').innerHTML = html;
-        }
-
-        // Show login screen
-        function showLoginScreen() {
-            const html = `
                 <div class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-md w-full">
-                        <!-- Logo/Icon -->
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
                         <div class="text-center mb-8">
                             <div class="bg-gradient-to-br from-blue-600 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1197,104 +51,305 @@
                             <h1 class="text-3xl font-bold text-gray-800">🏢 Villa Maintenance</h1>
                             <p class="text-gray-600 mt-2">Secure Access Required</p>
                         </div>
-
-                        <!-- Login Form -->
                         <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                                <div class="relative">
-                                    <input
-                                        id="passwordInput"
-                                        type="password"
-                                        placeholder="Type: villa2025"
-                                        onkeypress="handlePasswordKeyPress(event)"
-                                        autocomplete="off"
-                                        autocorrect="off"
-                                        autocapitalize="off"
-                                        spellcheck="false"
-                                        inputmode="text"
-                                        class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg font-mono"
-                                        autofocus
-                                    />
-                                    <button
-                                        type="button"
-                                        onclick="togglePasswordVisibility()"
-                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                                        title="Show/Hide password"
-                                    >
-                                        <svg id="eyeIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="mt-2 space-y-2">
-                                    <p class="text-xs text-blue-600">💡 Click eye icon 👁️ to see what you type</p>
-                                    <p class="text-xs text-gray-500">⌨️ Type carefully: all lowercase, no spaces</p>
-                                </div>
-                            </div>
-
-                            <!-- Debug Info -->
-                            <div id="debugInfo" class="hidden bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded">
-                                <!-- Debug info will appear here -->
-                            </div>
-
-                            <!-- Error Message -->
-                            <div id="errorMsg" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded">
-                                <p class="text-sm text-red-700 flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <div class="relative">
+                                <input
+                                    id="pass"
+                                    type="password"
+                                    placeholder="Enter password"
+                                    class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    onkeypress="if(event.key==='Enter') login()"
+                                />
+                                <button onclick="togglePass()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <svg id="eye" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
-                                    Password doesn't match. Check the debug info above.
-                                </p>
+                                </button>
                             </div>
-
-                            <button
-                                id="unlockBtn"
-                                onclick="checkPassword()"
-                                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
+                            <div id="err" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded text-sm text-red-700"></div>
+                            <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90">
                                 🔓 Unlock Dashboard
                             </button>
                         </div>
-
-                        <!-- Info -->
-                        <div class="mt-8 p-4 bg-gray-50 rounded-lg">
-                            <p class="text-xs text-gray-600 text-center">
-                                🔒 This is a secure system. Access is restricted to authorized personnel only.
-                            </p>
-                        </div>
+                        <p class="text-xs text-gray-500 text-center mt-6">🔒 Authorized personnel only</p>
                     </div>
                 </div>
-                
-                <style>
-                    @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        25% { transform: translateX(-10px); }
-                        75% { transform: translateX(10px); }
-                    }
-                    .animate-shake {
-                        animation: shake 0.3s ease-in-out;
-                    }
-                </style>
             `;
-            
-            document.getElementById('app').innerHTML = html;
+            document.getElementById('pass').focus();
         }
 
-        // Initialize app
-        function initApp() {
-            // Check if already authenticated in this session
-            if (sessionStorage.getItem('authenticated') === 'true') {
+        function togglePass() {
+            const input = document.getElementById('pass');
+            showPassword = !showPassword;
+            input.type = showPassword ? 'text' : 'password';
+        }
+
+        function login() {
+            const pass = document.getElementById('pass').value.trim();
+            const err = document.getElementById('err');
+            
+            if (pass === SITE_PASSWORD) {
                 isAuthenticated = true;
+                sessionStorage.setItem('auth', 'true');
                 loadData();
             } else {
-                showLoginScreen();
+                err.textContent = '❌ Incorrect password';
+                err.classList.remove('hidden');
+                document.getElementById('pass').value = '';
             }
         }
 
-        // Load data on page load
-        initApp();
+        function logout() {
+            isAuthenticated = false;
+            sessionStorage.removeItem('auth');
+            location.reload();
+        }
+
+        async function loadData() {
+            try {
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+                const res = await fetch(url);
+                const csv = await res.text();
+                const lines = csv.split('\n').filter(l => l.trim());
+                
+                allTickets = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const vals = parseCSVLine(lines[i]);
+                    if (vals[2]) {
+                        allTickets.push({
+                            date: vals[0] || '', time: vals[1] || '', mrfNo: vals[2] || '',
+                            villa: vals[3] || '', system: vals[4] || '', receptionist: vals[5] || '',
+                            details: vals[6] || '', intimatedBy: vals[7] || '', actionTaker: vals[8] || '',
+                            actionDate: vals[9] || '', status: vals[10] || 'Pending'
+                        });
+                    }
+                }
+                applyFilters();
+                render();
+            } catch(e) {
+                alert('Error loading data: ' + e.message);
+            }
+        }
+
+        function parseCSVLine(line) {
+            const vals = [];
+            let cur = '', inQ = false;
+            for (let c of line) {
+                if (c === '"') inQ = !inQ;
+                else if (c === ',' && !inQ) { vals.push(cur.trim().replace(/^"|"$/g, '')); cur = ''; }
+                else cur += c;
+            }
+            vals.push(cur.trim().replace(/^"|"$/g, ''));
+            return vals;
+        }
+
+        function applyFilters() {
+            filteredTickets = allTickets.filter(t => {
+                const vm = !filters.villa || t.villa.toLowerCase() === filters.villa.toLowerCase();
+                return vm &&
+                    (!filters.mrfNo || t.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
+                    (!filters.system || t.system.toLowerCase().includes(filters.system.toLowerCase())) &&
+                    (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase()));
+            });
+        }
+
+        function updateFilter(k, v) {
+            filters[k] = v;
+            applyFilters();
+            render();
+        }
+
+        function resetDashboard() {
+            filters = { mrfNo: '', villa: '', system: '', status: '' };
+            applyFilters();
+            render();
+        }
+
+        function exportCSV() {
+            const h = ['Date','Time','MRF No','Villa','System','Receptionist','Details','Intimated By','Action Taker','Action Date','Status'];
+            const rows = filteredTickets.map(t => [t.date,t.time,t.mrfNo,t.villa,t.system,t.receptionist,`"${t.details}"`,t.intimatedBy,t.actionTaker,t.actionDate,t.status].join(','));
+            const csv = [h.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'maintenance_report.csv';
+            a.click();
+        }
+
+        function getSystemPending() {
+            const pending = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
+            const cfg = {
+                'AC': {color:'blue', icon:'❄️'}, 'Electrical': {color:'yellow', icon:'⚡'},
+                'Plumbing': {color:'cyan', icon:'🚰'}, 'Carpentry': {color:'amber', icon:'🔨'},
+                'Painting': {color:'purple', icon:'🎨'}, 'Mason': {color:'gray', icon:'🧱'}
+            };
+            return Object.keys(cfg).map(s => ({
+                system: s, count: pending.filter(t => t.system === s).length, ...cfg[s]
+            }));
+        }
+
+        function toggleChat() {
+            showChat = !showChat;
+            render();
+        }
+
+        function sendChat() {
+            const inp = document.getElementById('chatInput');
+            const q = inp.value.trim();
+            if (!q) return;
+            chatHistory.push({role:'user', content:q});
+            inp.value = '';
+            const ans = getAnswer(q);
+            chatHistory.push({role:'assistant', content:ans});
+            render();
+            setTimeout(() => {
+                const box = document.querySelector('.overflow-y-auto');
+                if (box) box.scrollTop = box.scrollHeight;
+            }, 50);
+        }
+
+        function getAnswer(q) {
+            q = q.toLowerCase();
+            // Simple answers - add your logic here
+            if (q.includes('total')) {
+                const p = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                return `Total: ${allTickets.length} tickets\nPending: ${p}\nCompleted: ${allTickets.length - p}`;
+            }
+            return 'I can help with questions about villas, systems, complaints. Try asking about totals, specific villas, or pending issues.';
+        }
+
+        function render() {
+            if (!isAuthenticated) { showLogin(); return; }
+            
+            const stats = {
+                total: filteredTickets.length,
+                pending: filteredTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length,
+                completed: filteredTickets.filter(t => t.status.toLowerCase().includes('completed')).length,
+                progress: filteredTickets.filter(t => t.status.toLowerCase().includes('progress')).length
+            };
+            const sysPending = getSystemPending();
+            const systems = [...new Set(allTickets.map(t => t.system))];
+            const recent = [...filteredTickets].reverse().slice(0,25);
+
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen p-4 md:p-6">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <div><h1 class="text-2xl md:text-3xl font-bold">🏢 Villa Maintenance Dashboard</h1>
+                                <p class="text-gray-600">Track and manage maintenance - 2025</p></div>
+                                <div class="flex gap-2">
+                                    <button onclick="resetDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">🏠 Home</button>
+                                    <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">🔄 Refresh</button>
+                                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">🚪 Logout</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-blue-50 rounded-lg p-4"><p class="text-blue-600 text-sm font-medium">Total</p><p class="text-3xl font-bold text-blue-900">${stats.total}</p></div>
+                                <div class="bg-yellow-50 rounded-lg p-4"><p class="text-yellow-600 text-sm font-medium">Pending</p><p class="text-3xl font-bold text-yellow-900">${stats.pending}</p></div>
+                                <div class="bg-green-50 rounded-lg p-4"><p class="text-green-600 text-sm font-medium">Completed</p><p class="text-3xl font-bold text-green-900">${stats.completed}</p></div>
+                                <div class="bg-purple-50 rounded-lg p-4"><p class="text-purple-600 text-sm font-medium">In Progress</p><p class="text-3xl font-bold text-purple-900">${stats.progress}</p></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold mb-4">⚙️ Pending Work by System</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                ${sysPending.map(s => `
+                                    <div class="bg-${s.color}-50 rounded-lg p-4 border-l-4 border-${s.color}-500 cursor-pointer hover:shadow-md" 
+                                         onclick="updateFilter('system', '${s.system}'); updateFilter('status', 'pending');">
+                                        <div class="text-2xl mb-2">${s.icon}</div>
+                                        <p class="text-${s.color}-800 font-semibold text-sm">${s.system}</p>
+                                        <p class="text-3xl font-bold text-${s.color}-900">${s.count}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold mb-4">🔍 Search & Filter</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <input type="text" placeholder="MRF No" value="${filters.mrfNo}" onchange="updateFilter('mrfNo', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"/>
+                                <input type="text" placeholder="Villa/Flat" value="${filters.villa}" onchange="updateFilter('villa', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"/>
+                                <select onchange="updateFilter('system', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">All Systems</option>
+                                    ${systems.map(s => `<option value="${s}" ${filters.system===s?'selected':''}>${s}</option>`).join('')}
+                                </select>
+                                <select onchange="updateFilter('status', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="">All Status</option>
+                                    <option value="pending" ${filters.status==='pending'?'selected':''}>Pending</option>
+                                    <option value="progress" ${filters.status==='progress'?'selected':''}>In Progress</option>
+                                    <option value="completed" ${filters.status==='completed'?'selected':''}>Completed</option>
+                                </select>
+                            </div>
+                            <button onclick="exportCSV()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">📥 Export CSV</button>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-semibold">📋 Recent Tickets</h2>
+                                <span class="text-sm text-gray-600">Latest 25 of ${filteredTickets.length}</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead><tr class="border-b-2">
+                                        <th class="text-left py-3 px-4">Date</th><th class="text-left py-3 px-4">Time</th><th class="text-left py-3 px-4">MRF No</th>
+                                        <th class="text-left py-3 px-4">Villa</th><th class="text-left py-3 px-4">System</th><th class="text-left py-3 px-4">Details</th>
+                                        <th class="text-left py-3 px-4">Intimated By</th><th class="text-left py-3 px-4">Action Taker</th><th class="text-left py-3 px-4">Status</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        ${recent.map(t => `
+                                            <tr class="border-b hover:bg-gray-50">
+                                                <td class="py-3 px-4 text-sm">${t.date}</td><td class="py-3 px-4 text-sm">${t.time}</td>
+                                                <td class="py-3 px-4 font-medium text-blue-600">${t.mrfNo}</td><td class="py-3 px-4">${t.villa}</td>
+                                                <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">${t.system}</span></td>
+                                                <td class="py-3 px-4 max-w-xs truncate">${t.details}</td><td class="py-3 px-4 text-sm">${t.intimatedBy || '-'}</td>
+                                                <td class="py-3 px-4 text-sm">${t.actionTaker || '-'}</td>
+                                                <td class="py-3 px-4"><span class="px-2 py-1 rounded text-sm ${
+                                                    t.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
+                                                    t.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                                                }">${t.status}</span></td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fixed bottom-6 right-6 z-50">
+                    ${showChat ? `
+                        <div class="bg-white rounded-lg shadow-2xl w-96 h-96 flex flex-col">
+                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between">
+                                <div><h3 class="font-semibold">AI Assistant</h3><p class="text-xs">Ask about maintenance</p></div>
+                                <button onclick="toggleChat()" class="hover:bg-white/20 rounded p-1">✕</button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
+                                ${chatHistory.length === 0 ? '<p class="text-center text-gray-500 mt-8">👋 Ask me anything!</p>' :
+                                chatHistory.map(m => `<div class="flex ${m.role==='user'?'justify-end':'justify-start'} mb-3">
+                                    <div class="${m.role==='user'?'bg-blue-600 text-white':'bg-white'} rounded-lg p-3 max-w-xs shadow text-sm">${m.content}</div>
+                                </div>`).join('')}
+                            </div>
+                            <div class="p-4 border-t">
+                                <div class="flex gap-2">
+                                    <input id="chatInput" type="text" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendChat()" 
+                                        class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"/>
+                                    <button onclick="sendChat()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">➤</button>
+                                </div>
+                            </div>
+                        </div>
+                    ` : `
+                        <button onclick="toggleChat()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                            </svg>
+                        </button>
+                    `}
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
