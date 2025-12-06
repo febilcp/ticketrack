@@ -223,9 +223,17 @@
                 .replace(/flat no\.?/gi, 'flat')
                 .replace(/\s+/g, ' ')
                 .replace(/how many times?/gi, 'how many')
-                .replace(/how much/gi, 'how many');
+                .replace(/how much/gi, 'how many')
+                .replace(/show me/gi, '')
+                .replace(/tell me/gi, '');
+            
+            console.log('Chat query:', q);
             
             // Parse date helper
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
             function parseDate(dateStr) {
                 const parts = dateStr.split('-');
                 if (parts.length === 3) {
@@ -233,7 +241,12 @@
                         'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
                         'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
                     };
-                    return new Date(parts[2], months[parts[1].toLowerCase()], parseInt(parts[0]));
+                    const day = parseInt(parts[0]);
+                    const month = months[parts[1].toLowerCase()];
+                    const year = parseInt(parts[2]);
+                    if (day && month !== undefined && year) {
+                        return new Date(year, month, day);
+                    }
                 }
                 return null;
             }
@@ -241,45 +254,58 @@
             // Extract villa/flat
             const villaMatch = q.match(/villa\s*(\d+)/i);
             const flatMatch = q.match(/flat\s*(\d+)/i);
-            let villa = villaMatch ? `Villa ${villaMatch[1]}` : flatMatch ? `Flat ${flatMatch[1]}` : null;
+            let villa = null;
+            if (villaMatch) villa = `Villa ${villaMatch[1]}`;
+            else if (flatMatch) villa = `Flat ${flatMatch[1]}`;
             
             // Extract system
             const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
             const system = systems.find(s => q.includes(s));
             
-            // Detail keywords for searching
-            const detailKeywords = {
-                'interlock paint': ['interlock paint', 'interlock need to paint'],
-                'door lock': ['door lock'],
-                'washing machine': ['washing machine'],
-                'water heater': ['water heater', 'heater', 'geyser'],
-                'toilet': ['toilet', 'wc'],
-                'sink': ['sink', 'basin'],
-                'door': ['door'],
-                'window': ['window'],
-                'paint': ['paint', 'painting'],
-                'leak': ['leak', 'leaking'],
-                'drain': ['drain', 'clogged', 'blocked'],
-                'light': ['light', 'bulb'],
-                'fan': ['fan'],
-                'ac': ['ac', 'air condition']
-            };
-            
+            // Detail keywords (CHECK MULTI-WORD PHRASES FIRST!)
             let foundItem = null;
             let searchKeys = [];
             
-            // Check for detail-based search
-            if (q.includes('interlock') && (q.includes('paint') || q.includes('painting'))) {
+            // Multi-word phrases (check these first!)
+            if ((q.includes('interlock') && (q.includes('paint') || q.includes('painting')))) {
                 foundItem = 'interlock paint';
-                searchKeys = detailKeywords['interlock paint'];
-            } else if (q.includes('washing') && q.includes('machine')) {
+                searchKeys = ['interlock paint', 'interlock need to paint', 'interlock painting'];
+            } else if (q.includes('door') && q.includes('lock')) {
+                foundItem = 'door lock';
+                searchKeys = ['door lock', 'door locker'];
+            } else if ((q.includes('washing') && q.includes('machine')) || q.includes('washer')) {
                 foundItem = 'washing machine';
-                searchKeys = detailKeywords['washing machine'];
-            } else if (q.includes('water') && q.includes('heater')) {
+                searchKeys = ['washing machine', 'washer'];
+            } else if ((q.includes('water') && q.includes('heater')) || q.includes('geyser')) {
                 foundItem = 'water heater';
-                searchKeys = detailKeywords['water heater'];
+                searchKeys = ['water heater', 'heater', 'geyser'];
+            } else if (q.includes('dishwasher')) {
+                foundItem = 'dishwasher';
+                searchKeys = ['dishwasher', 'dish washer'];
             } else {
-                for (const [item, keywords] of Object.entries(detailKeywords)) {
+                // Single word items
+                const singleItems = {
+                    'fridge': ['fridge', 'refrigerator'],
+                    'toilet': ['toilet', 'wc', 'commode'],
+                    'sink': ['sink', 'basin'],
+                    'shower': ['shower'],
+                    'tap': ['tap', 'faucet'],
+                    'door': ['door'],
+                    'window': ['window'],
+                    'lock': ['lock', 'locker'],
+                    'paint': ['paint', 'painting'],
+                    'tile': ['tile', 'tiles'],
+                    'ceiling': ['ceiling'],
+                    'wall': ['wall'],
+                    'floor': ['floor'],
+                    'light': ['light', 'bulb', 'lamp'],
+                    'fan': ['fan'],
+                    'switch': ['switch', 'socket'],
+                    'drain': ['drain', 'drainage', 'clogged', 'blocked'],
+                    'leak': ['leak', 'leaking', 'leakage']
+                };
+                
+                for (const [item, keywords] of Object.entries(singleItems)) {
                     if (keywords.some(kw => q.includes(kw))) {
                         foundItem = item;
                         searchKeys = keywords;
@@ -288,128 +314,169 @@
                 }
             }
             
-            // Detail-based search
-            if (foundItem) {
+            // DETAIL-BASED SEARCH
+            if (foundItem && searchKeys.length > 0) {
+                console.log('Searching for item:', foundItem, 'with keys:', searchKeys);
                 const filtered = allTickets.filter(t => 
-                    searchKeys.some(kw => t.details.toLowerCase().includes(kw))
+                    searchKeys.some(kw => t.details.toLowerCase().includes(kw.toLowerCase()))
                 );
-                if (filtered.length === 0) return `❌ No complaints found for "${foundItem}"`;
+                
+                console.log('Found', filtered.length, 'matching tickets');
+                
+                if (filtered.length === 0) {
+                    return `❌ No complaints found for "${foundItem}".`;
+                }
+                
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
                 
                 const locations = {};
                 filtered.forEach(t => locations[t.villa] = (locations[t.villa] || 0) + 1);
-                const sorted = Object.entries(locations).sort((a,b) => b[1] - a[1]);
+                const sortedLoc = Object.entries(locations).sort((a,b) => b[1] - a[1]);
                 
-                return `🔍 ${foundItem.toUpperCase()} Search:\n\n📊 Total: ${filtered.length} complaints\n\n🏠 Locations (${sorted.length}):\n${sorted.slice(0,10).map(([v,c],i) => `${i+1}. ${v}: ${c}`).join('\n')}${sorted.length > 10 ? `\n...and ${sorted.length-10} more` : ''}\n\n📋 Recent:\n${filtered.slice(-3).map(t => `• ${t.villa}: ${t.details.substring(0,50)}...`).join('\n')}`;
+                const sysCounts = {};
+                filtered.forEach(t => sysCounts[t.system] = (sysCounts[t.system] || 0) + 1);
+                
+                let result = `🔍 ${foundItem.toUpperCase()} Search Results:\n\n`;
+                result += `📊 Total: ${filtered.length} complaints\n`;
+                result += `✅ Completed: ${completed}\n`;
+                result += `⏳ Pending: ${pending}\n\n`;
+                result += `🏠 Locations (${sortedLoc.length}):\n`;
+                result += sortedLoc.slice(0,10).map(([v,c],i) => `${i+1}. ${v}: ${c} complaint${c>1?'s':''}`).join('\n');
+                if (sortedLoc.length > 10) result += `\n...and ${sortedLoc.length - 10} more`;
+                result += `\n\n🔧 Systems:\n${Object.entries(sysCounts).sort((a,b)=>b[1]-a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
+                result += `\n\n📋 Recent:\n${filtered.slice(-3).map(t => `• ${t.villa} (${t.date}): ${t.details.substring(0,60)}${t.details.length>60?'...':''}`).join('\n')}`;
+                
+                return result;
             }
             
-            // Yesterday/Today queries
-            const today = new Date();
-            const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
-            
+            // YESTERDAY
             if (q.includes('yesterday')) {
-                const tickets = allTickets.filter(t => {
+                const yTickets = allTickets.filter(t => {
                     const d = parseDate(t.date);
                     return d && d.toDateString() === yesterday.toDateString();
                 });
+                
                 if (system) {
-                    const sys = tickets.filter(t => t.system.toLowerCase().includes(system));
-                    return `📅 Yesterday (${yesterday.toLocaleDateString()}):\n\n${system.toUpperCase()}: ${sys.length} complaints\n\n${sys.length > 0 ? 'Details:\n' + sys.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
+                    const sysTickets = yTickets.filter(t => t.system.toLowerCase().includes(system));
+                    return `📅 Yesterday:\n\n${system.toUpperCase()}: ${sysTickets.length} complaint${sysTickets.length!==1?'s':''}\n\n${sysTickets.length > 0 ? 'Details:\n' + sysTickets.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
                 }
-                return `📅 Yesterday: ${tickets.length} total complaints`;
+                return `📅 Yesterday: ${yTickets.length} total complaints`;
             }
             
+            // TODAY
             if (q.includes('today')) {
-                const tickets = allTickets.filter(t => {
+                const tTickets = allTickets.filter(t => {
                     const d = parseDate(t.date);
                     return d && d.toDateString() === today.toDateString();
                 });
+                
                 if (system) {
-                    const sys = tickets.filter(t => t.system.toLowerCase().includes(system));
-                    return `📅 Today:\n\n${system.toUpperCase()}: ${sys.length} complaints\n\n${sys.length > 0 ? sys.map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
+                    const sysTickets = tTickets.filter(t => t.system.toLowerCase().includes(system));
+                    return `📅 Today:\n\n${system.toUpperCase()}: ${sysTickets.length} complaint${sysTickets.length!==1?'s':''}\n\n${sysTickets.length > 0 ? sysTickets.map(t => `• ${t.villa}: ${t.details}`).join('\n') : 'No issues reported yet'}`;
                 }
-                return `📅 Today: ${tickets.length} total complaints`;
+                return `📅 Today: ${tTickets.length} total complaints`;
             }
             
-            // Top villas query
-            if ((q.includes('top') || q.includes('most') || q.includes('which')) && q.includes('villa')) {
+            // TOP/MOST/WHICH VILLA
+            if ((q.includes('top') || q.includes('most') || q.includes('which villa') || q.includes('what villa')) && (q.includes('villa') || q.includes('location'))) {
                 const counts = {};
-                const target = system || 'all';
                 allTickets.forEach(t => {
-                    if (!system || t.system.toLowerCase().includes(system))
+                    if (!system || t.system.toLowerCase().includes(system)) {
                         counts[t.villa] = (counts[t.villa] || 0) + 1;
+                    }
                 });
                 const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,10);
-                return `🏆 Top Locations (${target}):\n\n${sorted.map((v,i) => `${i+1}. ${v[0]}: ${v[1]} complaints`).join('\n')}`;
+                return `🏆 Top Locations ${system?'('+system.toUpperCase()+')':''}:\n\n${sorted.map(([v,c],i) => `${i+1}. ${v}: ${c} complaint${c>1?'s':''}`).join('\n')}\n\n${sorted[0] ? sorted[0][0] + ' has the most with ' + sorted[0][1] + ' complaints' : ''}`;
             }
             
-            // Technician workload
-            if (q.includes('technician') || q.includes('action taker')) {
+            // TECHNICIAN
+            if (q.includes('technician') || q.includes('action taker') || q.includes('assigned') || q.includes('busiest')) {
                 const counts = {};
                 allTickets.forEach(t => {
-                    if (t.actionTaker) counts[t.actionTaker] = (counts[t.actionTaker] || 0) + 1;
+                    if (t.actionTaker && t.actionTaker.trim()) {
+                        counts[t.actionTaker] = (counts[t.actionTaker] || 0) + 1;
+                    }
                 });
                 const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
-                return `👷 Technician Workload:\n\n${sorted.map(([tech,c],i) => `${i+1}. ${tech}: ${c} tasks`).join('\n')}`;
+                return `👷 Technician Workload:\n\n${sorted.map(([tech,c],i) => `${i+1}. ${tech}: ${c} task${c>1?'s':''}`).join('\n')}\n\nTotal technicians: ${sorted.length}`;
             }
             
-            // Compare villas
-            if (q.includes('compare') && villa) {
-                const matches = q.match(/villa\s*(\d+)/gi) || q.match(/flat\s*(\d+)/gi);
-                if (matches && matches.length >= 2) {
-                    const v1 = matches[0].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
-                    const v2 = matches[1].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
+            // COMPARE VILLAS
+            if (q.includes('compare')) {
+                const villaMatches = q.match(/villa\s*(\d+)/gi) || q.match(/flat\s*(\d+)/gi);
+                if (villaMatches && villaMatches.length >= 2) {
+                    const v1 = villaMatches[0].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
+                    const v2 = villaMatches[1].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
                     const t1 = allTickets.filter(t => t.villa.toLowerCase() === v1.toLowerCase());
                     const t2 = allTickets.filter(t => t.villa.toLowerCase() === v2.toLowerCase());
-                    return `⚖️ ${v1} vs ${v2}:\n\n${v1}:\n• Total: ${t1.length}\n• Pending: ${t1.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length}\n\n${v2}:\n• Total: ${t2.length}\n• Pending: ${t2.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length}`;
+                    const p1 = t1.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                    const p2 = t2.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                    return `⚖️ Comparison:\n\n${v1}:\n• Total: ${t1.length}\n• Pending: ${p1}\n• Completed: ${t1.length - p1}\n\n${v2}:\n• Total: ${t2.length}\n• Pending: ${p2}\n• Completed: ${t2.length - p2}`;
                 }
             }
             
-            // Villa + pending
-            if (villa && (q.includes('pending') || q.includes('open'))) {
+            // VILLA + PENDING
+            if (villa && (q.includes('pending') || q.includes('open') || q.includes('issue'))) {
                 const tickets = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
-                const pending = tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
+                const pending = tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending') || t.status.trim() === '');
+                
                 if (pending.length > 0) {
                     const sys = {};
                     pending.forEach(t => sys[t.system] = (sys[t.system] || 0) + 1);
-                    return `⚠️ ${villa} Pending (${pending.length}):\n\n${Object.entries(sys).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\nRecent:\n${pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n')}`;
+                    return `⚠️ ${villa} - Pending Issues (${pending.length}):\n\n${Object.entries(sys).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\nRecent:\n${pending.slice(-3).map(t => `• ${t.system}: ${t.details} (${t.mrfNo})`).join('\n')}`;
                 }
-                return `✅ ${villa}: No pending complaints!`;
+                return `✅ Great! ${villa} has no pending complaints.`;
             }
             
-            // Villa + system
+            // VILLA + SYSTEM
             if (villa && system) {
                 const filtered = allTickets.filter(t => 
-                    t.villa.toLowerCase() === villa.toLowerCase() && t.system.toLowerCase().includes(system)
+                    t.villa.toLowerCase() === villa.toLowerCase() && 
+                    t.system.toLowerCase().includes(system)
                 );
-                const p = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
-                return `🏠 ${villa} - ${system.toUpperCase()}:\n\n📊 Total: ${filtered.length}\n⏳ Pending: ${p}\n✅ Completed: ${filtered.length - p}\n\n${filtered.length > 0 ? 'Recent:\n' + filtered.slice(-3).map(t => `• ${t.date}: ${t.details}`).join('\n') : ''}`;
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
+                return `🏠 ${villa} - ${system.toUpperCase()}:\n\n📊 Total: ${filtered.length} complaint${filtered.length!==1?'s':''}\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\n${filtered.length > 0 ? 'Recent:\n' + filtered.slice(-3).map(t => `• ${t.date}: ${t.details} (${t.status})`).join('\n') : 'No complaints found'}`;
             }
             
-            // Just villa
+            // JUST VILLA
             if (villa) {
                 const tickets = allTickets.filter(t => t.villa.toLowerCase() === villa.toLowerCase());
                 const sys = {};
                 tickets.forEach(t => sys[t.system] = (sys[t.system] || 0) + 1);
                 const pending = tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
-                return `🏠 ${villa} Summary:\n\n📊 Total: ${tickets.length}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(sys).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
+                
+                return `🏠 ${villa} Summary:\n\n📊 Total: ${tickets.length} complaint${tickets.length!==1?'s':''}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(sys).sort((a,b)=>b[1]-a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n${pending.length > 0 ? 'Pending:\n' + pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n') : '✅ All resolved!'}`;
             }
             
-            // Just system
+            // JUST SYSTEM
             if (system) {
                 const filtered = allTickets.filter(t => t.system.toLowerCase().includes(system));
-                const p = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const pending = filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = filtered.filter(t => t.status.toLowerCase().includes('completed')).length;
+                
                 const counts = {};
                 filtered.forEach(t => counts[t.villa] = (counts[t.villa] || 0) + 1);
                 const top = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,5);
-                return `🔧 ${system.toUpperCase()} Report:\n\n📊 Total: ${filtered.length}\n⏳ Pending: ${p}\n\nTop Villas:\n${top.map(([v,c],i) => `${i+1}. ${v}: ${c}`).join('\n')}`;
+                
+                return `🔧 ${system.toUpperCase()} Report:\n\n📊 Total: ${filtered.length}\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\nTop Locations:\n${top.map(([v,c],i) => `${i+1}. ${v}: ${c}`).join('\n')}\n\n${pending > 0 ? 'Recent Pending:\n' + filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).slice(-3).map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
             }
             
-            // Total/summary
-            if (q.includes('total') || q.includes('summary') || q.includes('overall')) {
-                const p = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+            // TOTAL/SUMMARY
+            if (q.includes('total') || q.includes('summary') || q.includes('overall') || q.includes('how many complaint')) {
+                const pending = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
+                const completed = allTickets.filter(t => t.status.toLowerCase().includes('completed')).length;
                 const sys = {};
                 allTickets.forEach(t => sys[t.system] = (sys[t.system] || 0) + 1);
-                return `📊 Overall Summary:\n\n🎫 Total: ${allTickets.length}\n⏳ Pending: ${p}\n✅ Completed: ${allTickets.length - p}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b[1] - a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
+                
+                return `📊 Overall Summary:\n\n🎫 Total: ${allTickets.length} tickets\n⏳ Pending: ${pending}\n✅ Completed: ${completed}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b[1] - a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n💡 Ask about specific villas, systems, or items!`;
+            }
+            
+            // DEFAULT HELP
+            return `I can answer questions like:\n\n📅 Time-based:\n• "Yesterday AC complaints?"\n• "Today's issues?"\n\n🏠 Location:\n• "Villa 130 AC problems?"\n• "Flat 511 pending?"\n• "Which villa has most issues?"\n\n🔍 Item search:\n• "Washing machine complaints?"\n• "Interlock paint requests?"\n• "Water heater issues?"\n• "Door lock problems?"\n\n🔧 System:\n• "Plumbing report?"\n• "AC complaints?"\n\n👷 Other:\n• "Who is busiest technician?"\n• "Compare Villa 130 and Villa 95"\n\n💡 Just ask naturally!`;
+        }n⏳ Pending: ${p}\n✅ Completed: ${allTickets.length - p}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b[1] - a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
             }
             
             // Default help
