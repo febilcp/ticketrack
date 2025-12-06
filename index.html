@@ -116,12 +116,12 @@
                 allTickets = [];
                 for (let i = 1; i < lines.length; i++) {
                     const vals = parseCSVLine(lines[i]);
-                    if (vals[2]) {
+                    if (vals,[object Object],) {
                         allTickets.push({
-                            date: vals[0] || '', time: vals[1] || '', mrfNo: vals[2] || '',
-                            villa: vals[3] || '', system: vals[4] || '', receptionist: vals[5] || '',
-                            details: vals[6] || '', intimatedBy: vals[7] || '', actionTaker: vals[8] || '',
-                            actionDate: vals[9] || '', status: vals[10] || 'Pending'
+                            date: vals,[object Object], || '', time: vals,[object Object], || '', mrfNo: vals,[object Object], || '',
+                            villa: vals,[object Object], || '', system: vals,[object Object], || '', receptionist: vals,[object Object], || '',
+                            details: vals,[object Object], || '', intimatedBy: vals,[object Object], || '', actionTaker: vals,[object Object], || '',
+                            actionDate: vals,[object Object], || '', status: vals,[object Object], || 'Pending'
                         });
                     }
                 }
@@ -241,9 +241,9 @@
                         'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
                         'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
                     };
-                    const day = parseInt(parts[0]);
-                    const month = months[parts[1].toLowerCase()];
-                    const year = parseInt(parts[2]);
+                    const day = parseInt(parts,[object Object],);
+                    const month = months[parts,[object Object],toLowerCase()];
+                    const year = parseInt(parts,[object Object],);
                     if (day && month !== undefined && year) {
                         return new Date(year, month, day);
                     }
@@ -255,8 +255,8 @@
             const villaMatch = q.match(/villa\s*(\d+)/i);
             const flatMatch = q.match(/flat\s*(\d+)/i);
             let villa = null;
-            if (villaMatch) villa = `Villa ${villaMatch[1]}`;
-            else if (flatMatch) villa = `Flat ${flatMatch[1]}`;
+            if (villaMatch) villa = `Villa ${villaMatch,[object Object],}`;
+            else if (flatMatch) villa = `Flat ${flatMatch,[object Object],}`;
             
             // Extract system
             const systems = ['ac', 'electrical', 'plumbing', 'carpentry', 'painting', 'mason'];
@@ -332,7 +332,7 @@
                 
                 const locations = {};
                 filtered.forEach(t => locations[t.villa] = (locations[t.villa] || 0) + 1);
-                const sortedLoc = Object.entries(locations).sort((a,b) => b[1] - a[1]);
+                const sortedLoc = Object.entries(locations).sort((a,b) => b,[object Object], - a,[object Object],);
                 
                 const sysCounts = {};
                 filtered.forEach(t => sysCounts[t.system] = (sysCounts[t.system] || 0) + 1);
@@ -344,7 +344,7 @@
                 result += `🏠 Locations (${sortedLoc.length}):\n`;
                 result += sortedLoc.slice(0,10).map(([v,c],i) => `${i+1}. ${v}: ${c} complaint${c>1?'s':''}`).join('\n');
                 if (sortedLoc.length > 10) result += `\n...and ${sortedLoc.length - 10} more`;
-                result += `\n\n🔧 Systems:\n${Object.entries(sysCounts).sort((a,b)=>b[1]-a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
+                result += `\n\n🔧 Systems:\n${Object.entries(sysCounts).sort((a,b)=>b,[object Object],-a,[object Object],).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
                 result += `\n\n📋 Recent:\n${filtered.slice(-3).map(t => `• ${t.villa} (${t.date}): ${t.details.substring(0,60)}${t.details.length>60?'...':''}`).join('\n')}`;
                 
                 return result;
@@ -386,8 +386,8 @@
                         counts[t.villa] = (counts[t.villa] || 0) + 1;
                     }
                 });
-                const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,10);
-                return `🏆 Top Locations ${system?'('+system.toUpperCase()+')':''}:\n\n${sorted.map(([v,c],i) => `${i+1}. ${v}: ${c} complaint${c>1?'s':''}`).join('\n')}\n\n${sorted[0] ? sorted[0][0] + ' has the most with ' + sorted[0][1] + ' complaints' : ''}`;
+                const sorted = Object.entries(counts).sort((a,b) => b,[object Object], - a,[object Object],).slice(0,10);
+                return `🏆 Top Locations ${system?'('+system.toUpperCase()+')':''}:\n\n${sorted.map(([v,c],i) => `${i+1}. ${v}: ${c} complaint${c>1?'s':''}`).join('\n')}\n\n${sorted,[object Object], ? sorted,[object Object],[object Object], + ' has the most with ' + sorted,[object Object],[object Object], + ' complaints' : ''}`;
             }
             
             // TECHNICIAN
@@ -398,7 +398,7 @@
                         counts[t.actionTaker] = (counts[t.actionTaker] || 0) + 1;
                     }
                 });
-                const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+                const sorted = Object.entries(counts).sort((a,b) => b,[object Object], - a,[object Object],);
                 return `👷 Technician Workload:\n\n${sorted.map(([tech,c],i) => `${i+1}. ${tech}: ${c} task${c>1?'s':''}`).join('\n')}\n\nTotal technicians: ${sorted.length}`;
             }
             
@@ -406,8 +406,8 @@
             if (q.includes('compare')) {
                 const villaMatches = q.match(/villa\s*(\d+)/gi) || q.match(/flat\s*(\d+)/gi);
                 if (villaMatches && villaMatches.length >= 2) {
-                    const v1 = villaMatches[0].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
-                    const v2 = villaMatches[1].replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
+                    const v1 = villaMatches,[object Object],replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
+                    const v2 = villaMatches,[object Object],replace(/villa\s*/i, 'Villa ').replace(/flat\s*/i, 'Flat ');
                     const t1 = allTickets.filter(t => t.villa.toLowerCase() === v1.toLowerCase());
                     const t2 = allTickets.filter(t => t.villa.toLowerCase() === v2.toLowerCase());
                     const p1 = t1.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length;
@@ -448,7 +448,7 @@
                 tickets.forEach(t => sys[t.system] = (sys[t.system] || 0) + 1);
                 const pending = tickets.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
                 
-                return `🏠 ${villa} Summary:\n\n📊 Total: ${tickets.length} complaint${tickets.length!==1?'s':''}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(sys).sort((a,b)=>b[1]-a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n${pending.length > 0 ? 'Pending:\n' + pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n') : '✅ All resolved!'}`;
+                return `🏠 ${villa} Summary:\n\n📊 Total: ${tickets.length} complaint${tickets.length!==1?'s':''}\n⚠️ Pending: ${pending.length}\n\nBy System:\n${Object.entries(sys).sort((a,b)=>b,[object Object],-a,[object Object],).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n${pending.length > 0 ? 'Pending:\n' + pending.slice(-3).map(t => `• ${t.system}: ${t.details}`).join('\n') : '✅ All resolved!'}`;
             }
             
             // JUST SYSTEM
@@ -459,7 +459,7 @@
                 
                 const counts = {};
                 filtered.forEach(t => counts[t.villa] = (counts[t.villa] || 0) + 1);
-                const top = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0,5);
+                const top = Object.entries(counts).sort((a,b) => b,[object Object], - a,[object Object],).slice(0,5);
                 
                 return `🔧 ${system.toUpperCase()} Report:\n\n📊 Total: ${filtered.length}\n✅ Completed: ${completed}\n⏳ Pending: ${pending}\n\nTop Locations:\n${top.map(([v,c],i) => `${i+1}. ${v}: ${c}`).join('\n')}\n\n${pending > 0 ? 'Recent Pending:\n' + filtered.filter(t => !t.status || t.status.toLowerCase().includes('pending')).slice(-3).map(t => `• ${t.villa}: ${t.details}`).join('\n') : ''}`;
             }
@@ -471,20 +471,17 @@
                 const sys = {};
                 allTickets.forEach(t => sys[t.system] = (sys[t.system] || 0) + 1);
                 
-                return `📊 Overall Summary:\n\n🎫 Total: ${allTickets.length} tickets\n⏳ Pending: ${pending}\n✅ Completed: ${completed}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b[1] - a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n💡 Ask about specific villas, systems, or items!`;
+                return `📊 Overall Summary:\n\n🎫 Total: ${allTickets.length} tickets\n⏳ Pending: ${pending}\n✅ Completed: ${completed}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b,[object Object], - a,[object Object],).map(([s,c]) => `• ${s}: ${c}`).join('\n')}\n\n💡 Ask about specific villas, systems, or items!`;
             }
             
             // DEFAULT HELP
             return `I can answer questions like:\n\n📅 Time-based:\n• "Yesterday AC complaints?"\n• "Today's issues?"\n\n🏠 Location:\n• "Villa 130 AC problems?"\n• "Flat 511 pending?"\n• "Which villa has most issues?"\n\n🔍 Item search:\n• "Washing machine complaints?"\n• "Interlock paint requests?"\n• "Water heater issues?"\n• "Door lock problems?"\n\n🔧 System:\n• "Plumbing report?"\n• "AC complaints?"\n\n👷 Other:\n• "Who is busiest technician?"\n• "Compare Villa 130 and Villa 95"\n\n💡 Just ask naturally!`;
-        }n⏳ Pending: ${p}\n✅ Completed: ${allTickets.length - p}\n\nBy System:\n${Object.entries(sys).sort((a,b) => b[1] - a[1]).map(([s,c]) => `• ${s}: ${c}`).join('\n')}`;
-            }
-            
-            // Default help
-            return `I can answer:\n\n📅 Time:\n• "Yesterday AC complaints?"\n• "Today's issues?"\n\n🏠 Location:\n• "Villa 130 AC problems?"\n• "Flat 511 pending?"\n• "Which villa has most issues?"\n\n🔍 Items:\n• "Washing machine complaints?"\n• "Interlock paint requests?"\n• "Water heater issues?"\n\n🔧 Systems:\n• "Plumbing report?"\n• "AC complaints?"\n\nTry asking!`;
         }
 
         function render() {
             if (!isAuthenticated) { showLogin(); return; }
+            
+            console.log('Rendering dashboard...');
             
             const stats = {
                 total: filteredTickets.length,
@@ -492,127 +489,166 @@
                 completed: filteredTickets.filter(t => t.status.toLowerCase().includes('completed')).length,
                 progress: filteredTickets.filter(t => t.status.toLowerCase().includes('progress')).length
             };
+            
             const sysPending = getSystemPending();
             const systems = [...new Set(allTickets.map(t => t.system))];
             const recent = [...filteredTickets].reverse().slice(0,25);
 
-            document.getElementById('app').innerHTML = `
-                <div class="min-h-screen p-4 md:p-6">
-                    <div class="max-w-7xl mx-auto">
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <div><h1 class="text-2xl md:text-3xl font-bold">🏢 Villa Maintenance Dashboard</h1>
-                                <p class="text-gray-600">Track and manage maintenance - 2025</p></div>
-                                <div class="flex gap-2">
-                                    <button onclick="resetDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">🏠 Home</button>
-                                    <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">🔄 Refresh</button>
-                                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">🚪 Logout</button>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div class="bg-blue-50 rounded-lg p-4"><p class="text-blue-600 text-sm font-medium">Total</p><p class="text-3xl font-bold text-blue-900">${stats.total}</p></div>
-                                <div class="bg-yellow-50 rounded-lg p-4"><p class="text-yellow-600 text-sm font-medium">Pending</p><p class="text-3xl font-bold text-yellow-900">${stats.pending}</p></div>
-                                <div class="bg-green-50 rounded-lg p-4"><p class="text-green-600 text-sm font-medium">Completed</p><p class="text-3xl font-bold text-green-900">${stats.completed}</p></div>
-                                <div class="bg-purple-50 rounded-lg p-4"><p class="text-purple-600 text-sm font-medium">In Progress</p><p class="text-3xl font-bold text-purple-900">${stats.progress}</p></div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <h2 class="text-xl font-semibold mb-4">⚙️ Pending Work by System</h2>
-                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                ${sysPending.map(s => `
-                                    <div class="bg-${s.color}-50 rounded-lg p-4 border-l-4 border-${s.color}-500 cursor-pointer hover:shadow-md" 
-                                         onclick="updateFilter('system', '${s.system}'); updateFilter('status', 'pending');">
-                                        <div class="text-2xl mb-2">${s.icon}</div>
-                                        <p class="text-${s.color}-800 font-semibold text-sm">${s.system}</p>
-                                        <p class="text-3xl font-bold text-${s.color}-900">${s.count}</p>
-                                    </div>
-                                `).join('')}
+            const app = document.getElementById('app');
+            app.innerHTML = ''; // Clear first
+            
+            // Create main container
+            const container = document.createElement('div');
+            container.className = 'min-h-screen p-4 md:p-6';
+            container.innerHTML = `
+                <div class="max-w-7xl mx-auto">
+                    <!-- Header -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div><h1 class="text-2xl md:text-3xl font-bold">🏢 Villa Maintenance Dashboard</h1>
+                            <p class="text-gray-600">Track and manage - 2025</p></div>
+                            <div class="flex gap-2">
+                                <button onclick="resetDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">🏠</button>
+                                <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">🔄</button>
+                                <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">🚪</button>
                             </div>
                         </div>
-
-                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-                            <h2 class="text-xl font-semibold mb-4">🔍 Search & Filter</h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <input type="text" placeholder="MRF No" value="${filters.mrfNo}" onchange="updateFilter('mrfNo', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"/>
-                                <input type="text" placeholder="Villa/Flat" value="${filters.villa}" onchange="updateFilter('villa', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"/>
-                                <select onchange="updateFilter('system', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="">All Systems</option>
-                                    ${systems.map(s => `<option value="${s}" ${filters.system===s?'selected':''}>${s}</option>`).join('')}
-                                </select>
-                                <select onchange="updateFilter('status', this.value)" class="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="">All Status</option>
-                                    <option value="pending" ${filters.status==='pending'?'selected':''}>Pending</option>
-                                    <option value="progress" ${filters.status==='progress'?'selected':''}>In Progress</option>
-                                    <option value="completed" ${filters.status==='completed'?'selected':''}>Completed</option>
-                                </select>
-                            </div>
-                            <button onclick="exportCSV()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">📥 Export CSV</button>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-blue-50 rounded-lg p-4"><p class="text-blue-600 text-sm font-medium">Total</p><p class="text-3xl font-bold">${stats.total}</p></div>
+                            <div class="bg-yellow-50 rounded-lg p-4"><p class="text-yellow-600 text-sm font-medium">Pending</p><p class="text-3xl font-bold">${stats.pending}</p></div>
+                            <div class="bg-green-50 rounded-lg p-4"><p class="text-green-600 text-sm font-medium">Completed</p><p class="text-3xl font-bold">${stats.completed}</p></div>
+                            <div class="bg-purple-50 rounded-lg p-4"><p class="text-purple-600 text-sm font-medium">Progress</p><p class="text-3xl font-bold">${stats.progress}</p></div>
                         </div>
+                    </div>
 
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-semibold">📋 Recent Tickets</h2>
-                                <span class="text-sm text-gray-600">Latest 25 of ${filteredTickets.length}</span>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full">
-                                    <thead><tr class="border-b-2">
-                                        <th class="text-left py-3 px-4">Date</th><th class="text-left py-3 px-4">Time</th><th class="text-left py-3 px-4">MRF No</th>
-                                        <th class="text-left py-3 px-4">Villa</th><th class="text-left py-3 px-4">System</th><th class="text-left py-3 px-4">Details</th>
-                                        <th class="text-left py-3 px-4">Intimated By</th><th class="text-left py-3 px-4">Action Taker</th><th class="text-left py-3 px-4">Status</th>
-                                    </tr></thead>
-                                    <tbody>
-                                        ${recent.map(t => `
-                                            <tr class="border-b hover:bg-gray-50">
-                                                <td class="py-3 px-4 text-sm">${t.date}</td><td class="py-3 px-4 text-sm">${t.time}</td>
-                                                <td class="py-3 px-4 font-medium text-blue-600">${t.mrfNo}</td><td class="py-3 px-4">${t.villa}</td>
-                                                <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">${t.system}</span></td>
-                                                <td class="py-3 px-4 max-w-xs truncate">${t.details}</td><td class="py-3 px-4 text-sm">${t.intimatedBy || '-'}</td>
-                                                <td class="py-3 px-4 text-sm">${t.actionTaker || '-'}</td>
-                                                <td class="py-3 px-4"><span class="px-2 py-1 rounded text-sm ${
-                                                    t.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
-                                                    t.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-                                                }">${t.status}</span></td>
-                                            </tr>
-                                        `).join('')}
-                                    </tbody>
-                                </table>
+                    <!-- System Summary -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-xl font-semibold mb-4">⚙️ Pending by System</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4" id="sysGrid"></div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                        <h2 class="text-xl font-semibold mb-4">🔍 Search</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <input type="text" placeholder="MRF No" value="${filters.mrfNo}" onchange="updateFilter('mrfNo', this.value)" class="px-4 py-2 border rounded-lg"/>
+                            <input type="text" placeholder="Villa" value="${filters.villa}" onchange="updateFilter('villa', this.value)" class="px-4 py-2 border rounded-lg"/>
+                            <select onchange="updateFilter('system', this.value)" class="px-4 py-2 border rounded-lg">
+                                <option value="">All Systems</option>
+                                ${systems.map(s => `<option value="${s}" ${filters.system===s?'selected':''}>${s}</option>`).join('')}
+                            </select>
+                            <select onchange="updateFilter('status', this.value)" class="px-4 py-2 border rounded-lg">
+                                <option value="">All</option>
+                                <option value="pending">Pending</option>
+                                <option value="progress">Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <button onclick="exportCSV()" class="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg">📥 Export</button>
+                    </div>
+
+                    <!-- Table -->
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex justify-between mb-4">
+                            <h2 class="text-xl font-semibold">📋 Recent (25)</h2>
+                            <span class="text-sm text-gray-600">${filteredTickets.length} total</span>
+                        </div>
+                        <div class="overflow-x-auto" id="ticketTable"></div>
+                    </div>
+                </div>
+            `;
+            
+            app.appendChild(container);
+            
+            // Build system grid separately
+            const sysGrid = document.getElementById('sysGrid');
+            sysPending.forEach(s => {
+                const div = document.createElement('div');
+                div.className = `bg-${s.color}-50 rounded-lg p-4 border-l-4 border-${s.color}-500 cursor-pointer hover:shadow-md`;
+                div.onclick = () => { updateFilter('system', s.system); updateFilter('status', 'pending'); };
+                div.innerHTML = `<div class="text-2xl mb-2">${s.icon}</div><p class="text-sm font-semibold">${s.system}</p><p class="text-3xl font-bold">${s.count}</p>`;
+                sysGrid.appendChild(div);
+            });
+            
+            // Build table separately
+            const tableDiv = document.getElementById('ticketTable');
+            const table = document.createElement('table');
+            table.className = 'w-full';
+            table.innerHTML = `
+                <thead><tr class="border-b-2">
+                    <th class="text-left py-3 px-4">Date</th><th class="text-left py-3 px-4">Time</th><th class="text-left py-3 px-4">MRF</th>
+                    <th class="text-left py-3 px-4">Villa</th><th class="text-left py-3 px-4">System</th><th class="text-left py-3 px-4">Details</th>
+                    <th class="text-left py-3 px-4">Status</th>
+                </tr></thead>
+                <tbody id="tbody"></tbody>
+            `;
+            tableDiv.appendChild(table);
+            
+            const tbody = document.getElementById('tbody');
+            recent.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="py-3 px-4 text-sm">${t.date}</td>
+                    <td class="py-3 px-4 text-sm">${t.time}</td>
+                    <td class="py-3 px-4 font-medium text-blue-600">${t.mrfNo}</td>
+                    <td class="py-3 px-4">${t.villa}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">${t.system}</span></td>
+                    <td class="py-3 px-4 max-w-xs truncate">${t.details}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 rounded text-sm ${
+                        t.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
+                        t.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+                    }">${t.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Add chatbot
+            renderChatbot();
+            
+            console.log('Render complete!');
+        }
+
+        function renderChatbot() {
+            const existing = document.querySelector('.fixed.bottom-6');
+            if (existing) existing.remove();
+            
+            const chatDiv = document.createElement('div');
+            chatDiv.className = 'fixed bottom-6 right-6 z-50';
+            
+            if (showChat) {
+                chatDiv.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-2xl w-96 h-96 flex flex-col">
+                        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between">
+                            <div><h3 class="font-semibold">AI Assistant</h3><p class="text-xs">Ask anything</p></div>
+                            <button onclick="toggleChat()" class="hover:bg-white/20 rounded p-1">✕</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 bg-gray-50" id="chatMsgs">
+                            ${chatHistory.length === 0 ? '<p class="text-center text-gray-500 mt-8">👋 Ask me!</p>' :
+                            chatHistory.map(m => `<div class="flex ${m.role==='user'?'justify-end':'justify-start'} mb-3">
+                                <div class="${m.role==='user'?'bg-blue-600 text-white':'bg-white'} rounded-lg p-3 max-w-xs shadow text-sm whitespace-pre-wrap">${m.content}</div>
+                            </div>`).join('')}
+                        </div>
+                        <div class="p-4 border-t">
+                            <div class="flex gap-2">
+                                <input id="chatInput" type="text" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendChat()" 
+                                    class="flex-1 px-4 py-2 border rounded-lg text-sm"/>
+                                <button onclick="sendChat()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">➤</button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="fixed bottom-6 right-6 z-50">
-                    ${showChat ? `
-                        <div class="bg-white rounded-lg shadow-2xl w-96 h-96 flex flex-col">
-                            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg flex justify-between">
-                                <div><h3 class="font-semibold">AI Assistant</h3><p class="text-xs">Ask about maintenance</p></div>
-                                <button onclick="toggleChat()" class="hover:bg-white/20 rounded p-1">✕</button>
-                            </div>
-                            <div class="flex-1 overflow-y-auto p-4 bg-gray-50">
-                                ${chatHistory.length === 0 ? '<p class="text-center text-gray-500 mt-8">👋 Ask me anything!</p>' :
-                                chatHistory.map(m => `<div class="flex ${m.role==='user'?'justify-end':'justify-start'} mb-3">
-                                    <div class="${m.role==='user'?'bg-blue-600 text-white':'bg-white'} rounded-lg p-3 max-w-xs shadow text-sm">${m.content}</div>
-                                </div>`).join('')}
-                            </div>
-                            <div class="p-4 border-t">
-                                <div class="flex gap-2">
-                                    <input id="chatInput" type="text" placeholder="Ask..." onkeypress="if(event.key==='Enter')sendChat()" 
-                                        class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"/>
-                                    <button onclick="sendChat()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">➤</button>
-                                </div>
-                            </div>
-                        </div>
-                    ` : `
-                        <button onclick="toggleChat()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                            </svg>
-                        </button>
-                    `}
-                </div>
-            `;
+                `;
+            } else {
+                chatDiv.innerHTML = `
+                    <button onclick="toggleChat()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-full shadow-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            document.body.appendChild(chatDiv);
         }
     </script>
 </body>
