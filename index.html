@@ -280,10 +280,63 @@
                         <!-- Table -->
                         <div class="bg-white rounded-lg shadow-sm p-6">
                             <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-semibold text-gray-800">📋 Recent Maintenance Tickets</h2>
-                                <span class="text-sm text-gray-600">Showing latest 25 of ${filteredTickets.length} tickets</span>
+                                <h2 class="text-xl font-semibold text-gray-800">📋 Recent Tickets</h2>
+                                <span class="text-sm text-gray-600">Latest 25 of ${filteredTickets.length}</span>
                             </div>
-                            <div class="overflow-x-auto">
+                            
+                            <!-- Mobile Card View (Hidden on Desktop) -->
+                            <div class="block lg:hidden space-y-4">
+                                ${recent.map(t => `
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <div class="flex-1">
+                                                <p class="font-semibold text-blue-600 text-lg">${t.mrfNo}</p>
+                                                <p class="text-sm text-gray-600">${t.date} ${t.time}</p>
+                                            </div>
+                                            <span class="px-3 py-1 rounded-full text-xs font-medium ${
+                                                t.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
+                                                t.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }">${t.status || 'Pending'}</span>
+                                        </div>
+                                        
+                                        <div class="space-y-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-500 w-24">Villa/Flat:</span>
+                                                <span class="text-sm font-semibold text-gray-800">${t.villa}</span>
+                                            </div>
+                                            
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-500 w-24">System:</span>
+                                                <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">${t.system}</span>
+                                            </div>
+                                            
+                                            <div class="flex items-start gap-2">
+                                                <span class="text-xs font-medium text-gray-500 w-24 flex-shrink-0">Details:</span>
+                                                <span class="text-sm text-gray-700">${t.details}</span>
+                                            </div>
+                                            
+                                            ${t.intimatedBy ? `
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-500 w-24">Intimated:</span>
+                                                <span class="text-sm text-gray-700">${t.intimatedBy}</span>
+                                            </div>
+                                            ` : ''}
+                                            
+                                            ${t.actionTaker ? `
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-500 w-24">Action By:</span>
+                                                <span class="text-sm text-gray-700">${t.actionTaker}</span>
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                ${recent.length === 0 ? '<p class="text-center py-8 text-gray-500">No tickets found</p>' : ''}
+                            </div>
+                            
+                            <!-- Desktop Table View (Hidden on Mobile) -->
+                            <div class="hidden lg:block overflow-x-auto">
                                 <table class="w-full">
                                     <thead>
                                         <tr class="border-b-2 border-gray-200">
@@ -322,8 +375,8 @@
                                         `).join('')}
                                     </tbody>
                                 </table>
+                                ${recent.length === 0 ? '<p class="text-center py-8 text-gray-500">No tickets found</p>' : ''}
                             </div>
-                            ${recent.length === 0 ? '<p class="text-center py-8 text-gray-500">No tickets found matching the filters</p>' : ''}
                         </div>
                     </div>
                 </div>
