@@ -135,8 +135,15 @@
 
         function applyFilters() {
             filteredTickets = allTickets.filter(t => {
-                const vm = !filters.villa || t.villa.toLowerCase() === filters.villa.toLowerCase();
-                return vm &&
+                // Villa filter - search by number only
+                let villaMatch = true;
+                if (filters.villa) {
+                    const searchNum = filters.villa.trim();
+                    // Match if villa contains the number (Villa 130, Flat 130, etc.)
+                    villaMatch = t.villa.toLowerCase().includes(searchNum.toLowerCase());
+                }
+                
+                return villaMatch &&
                     (!filters.mrfNo || t.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
                     (!filters.system || t.system.toLowerCase().includes(filters.system.toLowerCase())) &&
                     (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase()));
@@ -306,7 +313,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <input id="mrfInput" type="text" placeholder="Search MRF No" value="${filters.mrfNo}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
-                                    <input id="villaInput" type="text" placeholder="Search Villa/Flat" value="${filters.villa}" 
+                                    <input id="villaInput" type="number" placeholder="Enter Number Only (e.g., 130)" value="${filters.villa}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
                                     <select id="systemInput" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
