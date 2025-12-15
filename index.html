@@ -135,21 +135,8 @@
 
         function applyFilters() {
             filteredTickets = allTickets.filter(t => {
-                // Villa filter - EXACT number match only
-                let villaMatch = true;
-                if (filters.villa) {
-                    const searchNum = filters.villa.trim();
-                    // Extract number from villa name (e.g., "Villa 130" -> "130", "Flat 511" -> "511")
-                    const villaNum = t.villa.match(/\d+/);
-                    if (villaNum) {
-                        // Exact match: search "30" only matches Villa/Flat 30
-                        villaMatch = villaNum[0] === searchNum;
-                    } else {
-                        villaMatch = false;
-                    }
-                }
-                
-                return villaMatch &&
+                const vm = !filters.villa || t.villa.toLowerCase() === filters.villa.toLowerCase();
+                return vm &&
                     (!filters.mrfNo || t.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
                     (!filters.system || t.system.toLowerCase().includes(filters.system.toLowerCase())) &&
                     (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase()));
@@ -319,7 +306,7 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <input id="mrfInput" type="text" placeholder="Search MRF No" value="${filters.mrfNo}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
-                                    <input id="villaInput" type="number" placeholder="Enter Number Only (e.g., 130)" value="${filters.villa}" 
+                                    <input id="villaInput" type="text" placeholder="Search Villa/Flat" value="${filters.villa}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
                                     <select id="systemInput" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
