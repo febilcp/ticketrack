@@ -135,12 +135,18 @@
 
         function applyFilters() {
             filteredTickets = allTickets.filter(t => {
-                // Villa filter - search by number only
+                // Villa filter - EXACT number match only
                 let villaMatch = true;
                 if (filters.villa) {
                     const searchNum = filters.villa.trim();
-                    // Match if villa contains the number (Villa 130, Flat 130, etc.)
-                    villaMatch = t.villa.toLowerCase().includes(searchNum.toLowerCase());
+                    // Extract number from villa name (e.g., "Villa 130" -> "130", "Flat 511" -> "511")
+                    const villaNum = t.villa.match(/\d+/);
+                    if (villaNum) {
+                        // Exact match: search "30" only matches Villa/Flat 30
+                        villaMatch = villaNum[0] === searchNum;
+                    } else {
+                        villaMatch = false;
+                    }
                 }
                 
                 return villaMatch &&
