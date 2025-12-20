@@ -17,7 +17,7 @@
         let isAuthenticated = sessionStorage.getItem('auth') === 'true';
         let allTickets = [];
         let filteredTickets = [];
-        let filters = { mrfNo: '', villa: '', system: '', status: '' };
+        let filters = { mrfNo: '', villa: '', system: '', status: '', details: '' };
 
         // Initialize
         if (isAuthenticated) {
@@ -139,7 +139,8 @@
                 return vm &&
                     (!filters.mrfNo || t.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
                     (!filters.system || t.system.toLowerCase().includes(filters.system.toLowerCase())) &&
-                    (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase()));
+                    (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase())) &&
+                    (!filters.details || t.details.toLowerCase().includes(filters.details.toLowerCase()));
             });
         }
 
@@ -150,7 +151,7 @@
         }
 
         function resetDashboard() {
-            filters = { mrfNo: '', villa: '', system: '', status: '' };
+            filters = { mrfNo: '', villa: '', system: '', status: '', details: '' };
             applyFilters();
             render();
         }
@@ -160,6 +161,7 @@
             filters.villa = document.getElementById('villaInput').value.trim();
             filters.system = document.getElementById('systemInput').value;
             filters.status = document.getElementById('statusInput').value;
+            filters.details = document.getElementById('detailsInput').value.trim();
             applyFilters();
             render();
         }
@@ -209,7 +211,7 @@
             const recent = [...filteredTickets].reverse().slice(0, 25);
             
             // Check if we're in search mode (any filter active)
-            const isSearching = filters.villa || filters.mrfNo || filters.system || filters.status;
+            const isSearching = filters.villa || filters.mrfNo || filters.system || filters.status || filters.details;
 
             document.getElementById('app').innerHTML = `
                 <div class="min-h-screen p-4 md:p-6">
@@ -303,10 +305,12 @@
                             <h2 class="text-xl font-semibold text-gray-800 mb-4">🔍 Search & Filter</h2>
                             <div class="grid grid-cols-1 gap-4">
                                 <!-- Mobile: Stack everything vertically -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                                     <input id="mrfInput" type="text" placeholder="Search MRF No" value="${filters.mrfNo}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
                                     <input id="villaInput" type="text" placeholder="Search Villa/Flat" value="${filters.villa}" 
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
+                                    <input id="detailsInput" type="text" placeholder="Search Details (e.g. water leaking)" value="${filters.details}" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"/>
                                     <select id="systemInput" 
                                         class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none">
