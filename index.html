@@ -1,1 +1,383 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa Maintenance Dashboard (All Years)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+
+    <script>
+        const SHEET_ID = '1T8p2ojn8W6jmC5rTAcZ7xxE7MKy-n9fa5ke4QFzVQY4';
+        
+        // MAPPING ALL YEARS (2018 - 2026) TO THEIR SPECIFIC GIDs
+        const SHEETS = {
+            '2026': { gid: '878818171', label: 'Year 2026' },
+            '2025': { gid: '931447490', label: 'Year 2025' },
+            '2024': { gid: '17034059', label: 'Year 2024' },
+            '2023': { gid: '524434308', label: 'Year 2023' },
+            '2022': { gid: '174001593', label: 'Year 2022' },
+            '2021': { gid: '1182812429', label: 'Year 2021' },
+            '2020': { gid: '0', label: 'Year 2020' },
+            '2019': { gid: '260773250', label: 'Year 2019' },
+            '2018': { gid: '1420362351', label: 'Year 2018' }
+        };
+
+        const SITE_PASSWORD = 'villa2025';
+
+        let isAuthenticated = sessionStorage.getItem('auth') === 'true';
+        // Default to the most recent year (2026) or last selected
+        let selectedYear = sessionStorage.getItem('selectedYear') || '2026';
+        let allTickets = [];
+        let filteredTickets = [];
+        let filters = { mrfNo: '', villa: '', system: '', status: '', details: '' };
+
+        // Initialize
+        if (isAuthenticated) {
+            loadData();
+        } else {
+            showLogin();
+        }
+
+        function showLogin() {
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+                        <div class="text-center mb-8">
+                            <div class="bg-gradient-to-br from-blue-600 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl font-bold text-gray-800">🏢 Villa Maintenance</h1>
+                            <p class="text-gray-600 mt-2">Secure Access Required</p>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="relative">
+                                <input id="pass" type="password" placeholder="Enter password" 
+                                    class="w-full px-4 py-3 pr-12 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    onkeypress="if(event.key==='Enter') login()"/>
+                                <button onclick="togglePass()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                    <svg id="eye" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <div id="err" class="hidden bg-red-50 border-l-4 border-red-500 p-3 rounded text-sm text-red-700"></div>
+                            <button onclick="login()" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:opacity-90">
+                                🔓 Unlock Dashboard
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 text-center mt-6">🔒 Authorized personnel only</p>
+                        <p class="text-center mt-4"><a href="https://febilcp.github.io/RGERPDASHBOARD/" class="text-blue-600 text-sm underline">← Back to Operations Hub</a></p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function togglePass() {
+            const input = document.getElementById('pass');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function login() {
+            const pass = document.getElementById('pass').value.trim();
+            if (pass === SITE_PASSWORD) {
+                isAuthenticated = true;
+                sessionStorage.setItem('auth', 'true');
+                loadData();
+            } else {
+                const err = document.getElementById('err');
+                err.textContent = '❌ Incorrect password';
+                err.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            sessionStorage.removeItem('auth');
+            sessionStorage.removeItem('selectedYear');
+            location.reload();
+        }
+
+        function switchYear(year) {
+            selectedYear = year;
+            sessionStorage.setItem('selectedYear', year);
+            loadData();
+        }
+
+        async function loadData() {
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div class="text-center">
+                        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+                        <p class="text-xl text-gray-600">Loading data for <span class="font-bold text-blue-600">${selectedYear}</span>...</p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                const currentGid = SHEETS[selectedYear].gid;
+                const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${currentGid}`;
+                const res = await fetch(url);
+                const csv = await res.text();
+                const lines = csv.split('\n').filter(l => l.trim());
+                allTickets = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const vals = parseCSV(lines[i]);
+                    if (vals[2]) {
+                        allTickets.push({
+                            date: vals[0] || '', time: vals[1] || '', mrfNo: vals[2] || '',
+                            villa: vals[3] || '', system: vals[4] || '', receptionist: vals[5] || '',
+                            details: vals[6] || '', intimatedBy: vals[7] || '', actionTaker: vals[8] || '',
+                            actionDate: vals[9] || '', status: vals[10] || 'Pending'
+                        });
+                    }
+                }
+                resetDashboard();
+            } catch(e) {
+                document.getElementById('app').innerHTML = `
+                    <div class="min-h-screen flex items-center justify-center p-4">
+                        <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
+                            <p class="text-red-600 font-bold text-lg mb-2">Error Loading Data</p>
+                            <p class="text-gray-600 mb-4">${e.message}</p>
+                            <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded">Retry</button>
+                            <p class="mt-4"><a href="https://febilcp.github.io/RGERPDASHBOARD/" class="text-blue-600 text-sm underline">← Back to Hub</a></p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function parseCSV(line) {
+            const vals = [];
+            let cur = '', inQ = false;
+            for (let c of line) {
+                if (c === '"') inQ = !inQ;
+                else if (c === ',' && !inQ) { vals.push(cur.trim().replace(/^"|"$/g, '')); cur = ''; }
+                else cur += c;
+            }
+            vals.push(cur.trim().replace(/^"|"$/g, ''));
+            return vals;
+        }
+
+        function applyFilters() {
+            filteredTickets = allTickets.filter(t => {
+                const vm = !filters.villa || t.villa.toLowerCase() === filters.villa.toLowerCase();
+                return vm &&
+                    (!filters.mrfNo || t.mrfNo.toLowerCase().includes(filters.mrfNo.toLowerCase())) &&
+                    (!filters.system || t.system.toLowerCase().includes(filters.system.toLowerCase())) &&
+                    (!filters.status || t.status.toLowerCase().includes(filters.status.toLowerCase())) &&
+                    (!filters.details || t.details.toLowerCase().includes(filters.details.toLowerCase()));
+            });
+        }
+
+        function updateFilter(k, v) {
+            filters[k] = v;
+            applyFilters();
+            render();
+        }
+
+        function resetDashboard() {
+            filters = { mrfNo: '', villa: '', system: '', status: '', details: '' };
+            applyFilters();
+            render();
+        }
+
+        function applySearch() {
+            filters.mrfNo = document.getElementById('mrfInput').value.trim();
+            filters.villa = document.getElementById('villaInput').value.trim();
+            filters.system = document.getElementById('systemInput').value;
+            filters.status = document.getElementById('statusInput').value;
+            filters.details = document.getElementById('detailsInput').value.trim();
+            applyFilters();
+            render();
+        }
+
+        function clearSearch() {
+            resetDashboard();
+        }
+
+        function exportCSV() {
+            const h = ['Date','Time','MRF No','Villa','System','Receptionist','Details','Intimated By','Action Taker','Action Date','Status'];
+            const rows = filteredTickets.map(t => [t.date,t.time,t.mrfNo,t.villa,t.system,t.receptionist,`"${t.details}"`,t.intimatedBy,t.actionTaker,t.actionDate,t.status].join(','));
+            const csv = [h.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], {type:'text/csv'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `maintenance_report_${selectedYear}.csv`;
+            a.click();
+        }
+
+        function getSystemPending() {
+            const pending = allTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending'));
+            const cfg = {
+                'AC': {color:'blue', icon:'❄️'}, 
+                'Electrical': {color:'yellow', icon:'⚡'},
+                'Plumbing': {color:'cyan', icon:'🚰'}, 
+                'Carpentry': {color:'amber', icon:'🔨'},
+                'Painting': {color:'purple', icon:'🎨'}, 
+                'Mason': {color:'gray', icon:'🧱'}
+            };
+            return Object.keys(cfg).map(s => ({
+                system: s, 
+                count: pending.filter(t => t.system === s).length, 
+                ...cfg[s]
+            }));
+        }
+
+        function render() {
+            const stats = {
+                total: filteredTickets.length,
+                pending: filteredTickets.filter(t => !t.status || t.status.toLowerCase().includes('pending')).length,
+                completed: filteredTickets.filter(t => t.status.toLowerCase().includes('completed')).length,
+                progress: filteredTickets.filter(t => t.status.toLowerCase().includes('progress')).length
+            };
+            const sysPending = getSystemPending();
+            const systems = [...new Set(allTickets.map(t => t.system))];
+            const recent = [...filteredTickets].reverse().slice(0, 25);
+            const isSearching = filters.villa || filters.mrfNo || filters.system || filters.status || filters.details;
+
+            document.getElementById('app').innerHTML = `
+                <div class="min-h-screen p-4 md:p-6">
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                                <div>
+                                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">🏢 Villa Maintenance Dashboard</h1>
+                                    <p class="text-gray-600">Archived & Active Records (<span class="font-bold text-blue-600">${selectedYear}</span>)</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <div class="relative">
+                                        <select id="yearSelect" onchange="switchYear(this.value)" 
+                                            class="appearance-none bg-indigo-50 border border-indigo-200 text-indigo-700 py-2 pl-4 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold shadow-sm">
+                                            ${Object.keys(SHEETS).sort((a,b) => b.localeCompare(a)).map(y => `
+                                                <option value="${y}" ${selectedYear === y ? 'selected' : ''}>${SHEETS[y].label}</option>
+                                            `).join('')}
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-indigo-700">
+                                            <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                                        </div>
+                                    </div>
+                                    <a href="https://febilcp.github.io/RGERPDASHBOARD/" class="bg-slate-800 text-white px-4 py-2 rounded-lg hover:bg-slate-900 text-sm md:text-base shadow-sm transition no-underline">← Hub</a>
+                                    <button onclick="resetDashboard()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm md:text-base shadow-sm transition">🏠 Reset View</button>
+                                    <button onclick="loadData()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm md:text-base shadow-sm transition">🔄 Refresh</button>
+                                    <button onclick="logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm md:text-base shadow-sm transition">🚪 Logout</button>
+                                </div>
+                            </div>
+                            ${isSearching ? `
+                                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                                    <h3 class="font-semibold text-blue-900 mb-2">
+                                        🔍 Search Results (${selectedYear})
+                                        ${filters.villa ? ` for ${filters.villa}` : ''}
+                                        ${filters.system ? ` - ${filters.system}` : ''}
+                                        ${filters.status ? ` (${filters.status})` : ''}
+                                    </h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        <div class="bg-white rounded-lg p-3 shadow-sm"><p class="text-blue-600 text-xs font-medium">Total</p><p class="text-2xl font-bold text-blue-900">${stats.total}</p></div>
+                                        <div class="bg-white rounded-lg p-3 shadow-sm"><p class="text-yellow-600 text-xs font-medium">Pending</p><p class="text-2xl font-bold text-yellow-900">${stats.pending}</p></div>
+                                        <div class="bg-white rounded-lg p-3 shadow-sm"><p class="text-green-600 text-xs font-medium">Completed</p><p class="text-2xl font-bold text-green-900">${stats.completed}</p></div>
+                                        <div class="bg-white rounded-lg p-3 shadow-sm"><p class="text-purple-600 text-xs font-medium">Progress</p><p class="text-2xl font-bold text-purple-900">${stats.progress}</p></div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div class="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500"><p class="text-blue-600 text-sm font-medium">Total Tickets</p><p class="text-3xl font-bold text-blue-900">${stats.total}</p></div>
+                                    <div class="bg-yellow-50 rounded-lg p-4 border-l-4 border-yellow-500"><p class="text-yellow-600 text-sm font-medium">Pending</p><p class="text-3xl font-bold text-yellow-900">${stats.pending}</p></div>
+                                    <div class="bg-green-50 rounded-lg p-4 border-l-4 border-green-500"><p class="text-green-600 text-sm font-medium">Completed</p><p class="text-3xl font-bold text-green-900">${stats.completed}</p></div>
+                                    <div class="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-500"><p class="text-purple-600 text-sm font-medium">In Progress</p><p class="text-3xl font-bold text-purple-900">${stats.progress}</p></div>
+                                </div>
+                            `}
+                        </div>
+
+                        ${!isSearching ? `
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">⚙️ Pending Work by System (${selectedYear})</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                                ${sysPending.map(s => `
+                                    <div class="bg-${s.color}-50 rounded-lg p-4 border-l-4 border-${s.color}-500 hover:shadow-md cursor-pointer transition-shadow" 
+                                         onclick="updateFilter('system', '${s.system}'); updateFilter('status', 'pending');">
+                                        <div class="text-2xl mb-2">${s.icon}</div>
+                                        <p class="text-${s.color}-800 font-semibold text-sm">${s.system}</p>
+                                        <p class="text-2xl font-bold text-${s.color}-900">${s.count}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        ` : ''}
+
+                        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">🔍 Search & Filter</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+                                <input id="mrfInput" type="text" placeholder="MRF No" class="px-3 py-2 border rounded-lg" value="${filters.mrfNo}">
+                                <input id="villaInput" type="text" placeholder="Villa" class="px-3 py-2 border rounded-lg" value="${filters.villa}">
+                                <select id="systemInput" class="px-3 py-2 border rounded-lg">
+                                    <option value="">All Systems</option>
+                                    ${systems.map(s => `<option value="${s}" ${filters.system===s?'selected':''}>${s}</option>`).join('')}
+                                </select>
+                                <select id="statusInput" class="px-3 py-2 border rounded-lg">
+                                    <option value="">All Status</option>
+                                    <option value="pending" ${filters.status==='pending'?'selected':''}>Pending</option>
+                                    <option value="completed" ${filters.status==='completed'?'selected':''}>Completed</option>
+                                    <option value="progress" ${filters.status==='progress'?'selected':''}>In Progress</option>
+                                </select>
+                                <input id="detailsInput" type="text" placeholder="Details keyword" class="px-3 py-2 border rounded-lg" value="${filters.details}">
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="applySearch()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Search</button>
+                                <button onclick="clearSearch()" class="bg-gray-500 text-white px-4 py-2 rounded-lg">Clear</button>
+                                <button onclick="exportCSV()" class="bg-green-600 text-white px-4 py-2 rounded-lg">Export CSV</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg shadow-sm p-6">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-4">📋 Tickets (${recent.length} shown)</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b-2 border-gray-200">
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Time</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">MRF No</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Villa</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">System</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Details</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Intimated By</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Action Taker</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${recent.map(t => `
+                                            <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                                <td class="py-3 px-4 text-sm text-gray-700">${t.date}</td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${t.time}</td>
+                                                <td class="py-3 px-4 font-medium text-blue-600">${t.mrfNo}</td>
+                                                <td class="py-3 px-4 text-gray-700">${t.villa}</td>
+                                                <td class="py-3 px-4"><span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-sm">${t.system}</span></td>
+                                                <td class="py-3 px-4 text-gray-700 max-w-xs truncate" title="${t.details}">${t.details}</td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${t.intimatedBy || '-'}</td>
+                                                <td class="py-3 px-4 text-sm text-gray-700">${t.actionTaker || '-'}</td>
+                                                <td class="py-3 px-4">
+                                                    <span class="px-2 py-1 rounded text-sm font-medium ${
+                                                        t.status.toLowerCase().includes('completed') ? 'bg-green-100 text-green-800' :
+                                                        t.status.toLowerCase().includes('progress') ? 'bg-yellow-100 text-yellow-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                    }">${t.status || 'Pending'}</span>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                                ${recent.length === 0 ? '<p class="text-center py-8 text-gray-500">No tickets found</p>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
